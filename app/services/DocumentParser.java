@@ -2,6 +2,8 @@ package services;
 
 import java.util.List;
 
+import model.Document;
+
 /**
  * Interface de processadores de documentos (parsers)
  * @author jose
@@ -43,5 +45,15 @@ public interface DocumentParser {
 	 */
 	public String getLanguage();
 	
-	public List<Bibliography> getReferences();
+	public List<Document> getReferences();
+
+	public String getContainer();
+
+	public String getIssue();
+
+	public String getISSN();
+
+	public String getPages();
+
+	public String getVolume();
 }

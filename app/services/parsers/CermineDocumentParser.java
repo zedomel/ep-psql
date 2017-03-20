@@ -6,13 +6,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import model.Document;
 import pl.edu.icm.cermine.ContentExtractor;
 import pl.edu.icm.cermine.bibref.model.BibEntry;
 import pl.edu.icm.cermine.metadata.model.DocumentAffiliation;
 import pl.edu.icm.cermine.metadata.model.DocumentAuthor;
 import pl.edu.icm.cermine.metadata.model.DocumentDate;
 import pl.edu.icm.cermine.metadata.model.DocumentMetadata;
-import services.Bibliography;
 import services.DocumentParser;
 import services.Utils;
 
@@ -112,25 +112,58 @@ public class CermineDocumentParser implements DocumentParser{
 	public String getKeywords() {
 		return metadata.getKeywords().stream().map(s -> s.toString()).collect(Collectors.joining(", "));
 	}
+	
+	@Override
+	public String getContainer() {
+		return metadata.getJournal();
+	}
 
-	public List<Bibliography> getReferences(){
-		List<Bibliography> refs = new ArrayList<>(references.size());
+	@Override
+	public String getIssue() {
+		return metadata.getIssue();
+	}
+
+	@Override
+	public String getISSN() {
+		return metadata.getJournalISSN();
+	}
+
+	@Override
+	public String getPages() {
+		if ( metadata.getFirstPage() != null && metadata.getLastPage() != null )
+			return metadata.getFirstPage() + "-" + metadata.getLastPage();
+		return null;
+	}
+
+	@Override
+	public String getVolume() {
+		return metadata.getVolume();
+	}
+
+	public List<Document> getReferences(){
+		List<Document> refs = new ArrayList<>(references.size());
 		for(BibEntry entry : references){
-			Bibliography bib = new Bibliography();
-			String str = entry.getFirstFieldValue(BibEntry.FIELD_TITLE);
-			bib.setTitle(str != null ? str.toLowerCase() : null);
+			Document ref = new Document();
 			
-			str = entry.getFirstFieldValue(BibEntry.FIELD_DOI);
-			bib.setDOI(str != null ? str.toLowerCase() : null);
+			ref.setTitle(entry.getFirstFieldValue(BibEntry.FIELD_TITLE));
+			ref.setDOI(entry.getFirstFieldValue(BibEntry.FIELD_DOI));
+			ref.setAuthors(entry.getAllFieldValues(BibEntry.FIELD_AUTHOR).stream().map(
+					s -> s.toString()).collect(Collectors.joining(", ")));
+			ref.setISSN( entry.getFirstFieldValue(BibEntry.FIELD_ISSN));
+			ref.setIssue( entry.getFirstFieldValue(BibEntry.FIELD_SERIES));
+			ref.setKeywords(entry.getFirstFieldValue(BibEntry.FIELD_KEYWORDS));
+			ref.setLanguage(entry.getFirstFieldValue(BibEntry.FIELD_LANGUAGE));
+			ref.setPages(entry.getFirstFieldValue(BibEntry.FIELD_PAGES));
+			ref.setPublicationDate(entry.getFirstFieldValue(BibEntry.FIELD_YEAR));
+			ref.setVolume(entry.getFirstFieldValue(BibEntry.FIELD_VOLUME));
+			ref.setAbstract(entry.getFirstFieldValue(BibEntry.FIELD_ABSTRACT));
 			
-			str = Utils.normalizeAuthors(entry.getAllFieldValues(BibEntry.FIELD_AUTHOR));
-			bib.setAuthors(str != null ? str.toLowerCase() : null);
+			if ( entry.getFirstFieldValue(BibEntry.FIELD_JOURNAL) != null )
+				ref.setContainer(entry.getFirstFieldValue(BibEntry.FIELD_JOURNAL));
+			else if ( entry.getFirstFieldValue(BibEntry.FIELD_BOOKTITLE) != null )
+				ref.setContainer( entry.getFirstFieldValue(BibEntry.FIELD_BOOKTITLE));
 			
-			str = entry.getFirstFieldValue(BibEntry.FIELD_JOURNAL);
-			bib.setJournal(str != null ? str.toLowerCase() : null);
-			
-			bib.setPublicationDate(Utils.sanitizeYear(entry.getFirstFieldValue(BibEntry.FIELD_YEAR)));
-			refs.add(bib);
+			refs.add(ref);
 		}
 		return refs;
 	}

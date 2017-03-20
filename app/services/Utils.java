@@ -10,7 +10,7 @@ public final class Utils {
 
 
 	public static final String AUTHOR_SEPARATOR = ";";
-	
+
 	private static final Pattern YEAR_PATTERN = Pattern.compile("\\w*(\\d{4})\\w*");
 
 
@@ -42,10 +42,10 @@ public final class Utils {
 	}
 
 	public static String normalizePerson(List<Person> authors) {
-		
+
 		if (authors == null)
 			return null;
-		
+
 		StringBuilder sb = new StringBuilder();
 		for(Person p : authors){
 			sb.append(Utils.sanitize(p.getLastName()));
@@ -71,8 +71,21 @@ public final class Utils {
 			sb.append(bib.getPublicationDate() + " ");
 		if (bib.getDOI() != null)
 			sb.append(bib.getDOI());
-		
+
 		return sb.toString().trim();
+	}
+
+	public static String languageToISO3166(String language) {
+		if ( language != null ){
+			switch (language){
+			//languages are encoded in ISO 3166
+			case "en":
+				return "english";
+			default:
+				return "english";
+			}
+		}
+		return "english";
 	}
 
 }

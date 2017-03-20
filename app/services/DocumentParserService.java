@@ -3,19 +3,22 @@ package services;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.ArrayList;
 import java.util.List;
 
-import javax.inject.Singleton;
-import javax.sql.DataSource;
+import javax.inject.Inject;
 
 import org.grobid.core.mock.MockContext;
-import org.postgresql.ds.PGSimpleDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigFactory;
+
 import model.Document;
-import play.mvc.Controller;
+import play.Configuration;
+import play.db.Database;
+import play.db.DefaultDatabase;
+import services.database.DatabaseParserService;
 import services.parsers.GrobIDDocumentParser;
 
 /**
@@ -24,21 +27,21 @@ import services.parsers.GrobIDDocumentParser;
  * @author jose
  *
  */
-@Singleton
-public class DocumentParserService extends Controller {
+public class DocumentParserService {
 
 	private Logger logger = LoggerFactory.getLogger(DocumentParserService.class);
 
 	/**
-	 * Document Parser: GROBID and Cermine
+	 * Document Parser
 	 */
 	private DocumentParser documentParser;
 
-	private DatabaseService dbService;
+	private DatabaseParserService dbService;
 
-	public DocumentParserService( DocumentParser parser, DataSource dataSource ) throws IOException{
+	@Inject
+	public DocumentParserService( DocumentParser parser, Database db ) throws IOException{
 		this.documentParser = parser;
-		this.dbService = new DatabaseService(dataSource);
+		this.dbService = new DatabaseParserService(db);
 	}
 
 	/**
@@ -52,31 +55,17 @@ public class DocumentParserService extends Controller {
 	 */
 	public void addDocuments(String docsDir) throws IOException
 	{
-
-
 		File dir = new File(docsDir);
 		try{
-			final List<Document> docs = new ArrayList<>();
 			//Iterates over all documents in the directory
 			Files.list(dir.toPath()).forEach( (path) -> 
 			{
 				try {
-					// Parse document file
-					Document doc = parseDocument(path.toFile());
-					List<Bibliography> references = parseReferences(path.toFile(), doc);
-
-					if (doc != null){
-						// Write document to the index
-						dbService.addDocument(doc);
-						docs.add(doc);
-					}
-
+					addDocument(path.toFile().getAbsolutePath());
 				} catch (Exception e) {
 					logger.error("Error importing document: "+path.toAbsolutePath(), e);
 				}
 			});
-
-			//			updateCitations(writer, docs);
 
 		}catch(Exception e){
 			throw e;	
@@ -99,9 +88,9 @@ public class DocumentParserService extends Controller {
 				long docId = dbService.addDocument(doc);
 				if ( docId > 0){
 					doc.setDocId(docId);
-					List<Bibliography> references = parseReferences(file, doc);
+					List<Document> references = parseReferences(file, doc);
 					if ( references != null && ! references.isEmpty() ){
-						addReferences(doc, references);
+						dbService.addReferences(docId, references);
 					}
 				}
 
@@ -116,41 +105,12 @@ public class DocumentParserService extends Controller {
 	 * @param id the id of the document to remove (Neo4j node id).
 	 * @throws Exception if any error occurs when removing the document.
 	 */
-	public void removeDocument(String id) throws Exception{
+	public void removeDocument(long id) throws Exception{
 		try{
-			//				updateCitations(writer, Arrays.asList(isearch.doc(hits[0].doc)));
 			// Remove from Index
 			dbService.deleteDocument(id);
 		}catch(Exception e){
 			throw e;
-		}
-	}
-
-	/**
-	 * Update documents citations by adding nodes and
-	 * edges to Neo4j graph and updating citCount field
-	 * @param doc referenced document to process
-	 * @throws Exception 
-	 */
-	//	private long addCitation(Document doc, Bibliography bib) throws Exception {
-	//		try {
-	//			long citedNodeId = DatabaseHelper.createCitaton(doc, bib.getDOI(), 
-	//					bib.getTitle(), bib.getAuthors(), bib.getPublicationDate());
-	//			return citedNodeId;
-	//		} catch (Exception e) {
-	//			logger.error("Error adding citation for document: " + doc.get("file"), e);
-	//			throw e;
-	//		}
-	//	}
-
-	private void addReferences(Document doc, List<Bibliography> references) throws IOException{
-		for( Bibliography bib : references ){
-			try {
-				long refId = dbService.addReference(bib);
-				dbService.addCitation(doc.getDocId(), refId);
-			} catch (Exception e) {
-				logger.error("Can't add referece: "+bib.toString() + " of doc: " + doc.toString() );
-			}
 		}
 	}
 
@@ -177,7 +137,7 @@ public class DocumentParserService extends Controller {
 		return doc;
 	}
 
-	private List<Bibliography> parseReferences(File docFile, Document doc) {
+	private List<Document> parseReferences(File docFile, Document doc) {
 		try {
 			documentParser.parseReferences(docFile.getAbsolutePath());
 		} catch (Exception e) {
@@ -196,22 +156,28 @@ public class DocumentParserService extends Controller {
 	 * @throws Exception if any error occurs extracting data.
 	 */
 	private Document parseDocument(String filename) throws Exception {
-		
+
 		// Parse document
 		this.documentParser.parseHeader(filename);
-		
+
 		String title = documentParser.getTitle();
 		String authors = documentParser.getAuthors();
-		
-		if ( title == null || authors == null)
-			throw new Exception("Document has no title or authors");
-			
-		//TODO: adicionar outros campos ao objeto
+		String doi = documentParser.getDOI();
+
+		if ( (title == null || authors == null) && doi == null )
+			throw new Exception("Document has no title, authors or DOI");
+
 		Document doc = new Document();
 		doc.setTitle(title);
 		doc.setAuthors(authors);
+		doc.setDOI(doi);
 		doc.setKeywords(documentParser.getKeywords());
 		doc.setAbstract(documentParser.getAbstract());
+		doc.setContainer(documentParser.getContainer());
+		doc.setISSN(documentParser.getISSN());
+		doc.setIssue(documentParser.getIssue());
+		doc.setPages(documentParser.getPages());
+		doc.setVolume(documentParser.getVolume());
 		doc.setPublicationDate(documentParser.getPublicationDate());
 		doc.setLanguage(documentParser.getLanguage());
 
@@ -226,34 +192,24 @@ public class DocumentParserService extends Controller {
 		}
 	}
 
-	/**
-	 * Normalize authors raw string: removes new lines, extra spaces and
-	 * 'and' words.
-	 * @param authors a string to be normalized
-	 * @return a normalized string with new line, extra 
-	 * white spaces and  'and' words removed.
-	 */
-	private String normalizeAuthors(String authors) {
-		return authors.replaceAll("\n|;|\\s+and\\s+", Utils.AUTHOR_SEPARATOR).toLowerCase();
-	}
-
 	public static void main(String[] args) throws Exception {
 
 		if ( args.length != 1){
 			System.out.println("Provide the directory path where articles are located");
+			System.out.println("Usage: DocumentParserService <directory_with_pdf_documents>");
 			return;
 		}
-		
+
 		try {
-			PGSimpleDataSource ds = new PGSimpleDataSource();
-			ds.setUrl("jdbc:postgresql://localhost/petrica");
-			ds.setUser("postgres");
-			ds.setPassword("kurt1234");
-			DocumentParserService indexer = new DocumentParserService(new GrobIDDocumentParser(true), ds);
-			indexer.addDocuments(args[0]);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			Config conf = ConfigFactory.parseFile(new File("conf/application.conf"));
+			Configuration configuration = new Configuration(conf);
+
+			DefaultDatabase db = new DefaultDatabase("db.default", configuration.getConfig("db.default"));
+			DocumentParserService parserService = new DocumentParserService(new GrobIDDocumentParser(true), db);
+			parserService.addDocuments(args[0]);
+
+		} catch (Exception e) {
+			e.printStackTrace(System.err);
 		}
 	}
 

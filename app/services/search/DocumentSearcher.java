@@ -9,7 +9,4 @@ public interface DocumentSearcher {
 	public String search(String terms, boolean fetchNumberOfCitations) throws Exception;
 	
 	public String search(String terms, boolean fetchNumberOfCitations, int count) throws Exception;
-	
-	
-
 }

@@ -3,7 +3,6 @@ package controllers;
 import javax.inject.Inject;
 import javax.inject.Named;
 
-import play.db.Database;
 import play.mvc.Controller;
 import play.mvc.Result;
 import play.routing.JavaScriptReverseRouter;
@@ -16,14 +15,14 @@ import views.html.index;
  */
 public class HomeController extends Controller {
 	
-	private final Database database;
+	/**
+	 * IndexSearcher for documents in database
+	 */
+	private final DocumentSearcher docSearcher;
 	
 	@Inject
-	public HomeController(Database db) { //, PapersIndexer indexer) {
-		this.database = db;
-		db.getConnection();
-//		this.formFactory = formFactory;
-		//this.indexer = indexer;
+	public HomeController(@Named("docSearcher") DocumentSearcher docSearcher) {
+		this.docSearcher = docSearcher;
 	}
 
     /**
@@ -42,9 +41,9 @@ public class HomeController extends Controller {
      * @return Play result as Json
      */
     public Result search(String term){
-    	String jsonResult = "";
+    	String jsonResult;
 		try {
-//			jsonResult = docSearcher.search(term, false, 100);
+			jsonResult = docSearcher.search(term, false, 100);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

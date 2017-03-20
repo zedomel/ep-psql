@@ -24,7 +24,9 @@ libraryDependencies ++= Seq(
   "org.apache.commons" % "commons-lang3" % "3.0.1",
   "org.slf4j" % "slf4j-api" % "1.7.7",
   "xerces" % "xercesImpl" % "2.11.0",
-  "directory-naming" % "naming-java" % "0.8"
+  "directory-naming" % "naming-java" % "0.8",
+  "com.fasterxml.jackson.core" % "jackson-databind" % "2.8.7",
+  "org.jblas" % "jblas" % "1.2.4"
 //  "com.google.guava" % "guava" % "16.0.1"
 )
 

@@ -8,19 +8,31 @@ package model;
  */
 public class Document {
 
-	private long _docId;
+	private long docId;
+	
+	private String doi;
 
-	private String _title;
+	private String title;
 
-	private String _keywords;
+	private String keywords;
 
-	private String _authors;
+	private String authors;
 
 	private String _abstract;
 
-	private String _publicationDate;
+	private String publicationDate;
 	
-	private String _language;
+	private String volume;
+	
+	private String pages;
+	
+	private String issue;
+	
+	private String container;
+	
+	private String ISSN;
+	
+	private String language;
 
 	/**
 	 * Cria um novo documento
@@ -28,52 +40,111 @@ public class Document {
 	public Document() {
 
 	}
-
+	
 	public long getDocId() {
-		return _docId;
+		return docId;
 	}
 
-	public void setDocId(long _docId) {
-		this._docId = _docId;
+	public void setDocId(long docId) {
+		this.docId = docId;
+	}
+
+	public String getDOI() {
+		return doi;
+	}
+
+	public void setDOI(String doi) {
+		this.doi = doi;
 	}
 
 	public String getTitle() {
-		return _title;
+		return title;
 	}
-	public void setTitle(String _title) {
-		this._title = _title;
+
+	public void setTitle(String title) {
+		this.title = title;
 	}
+
 	public String getKeywords() {
-		return _keywords;
+		return keywords;
 	}
-	public void setKeywords(String _keywords) {
-		this._keywords = _keywords;
+
+	public void setKeywords(String keywords) {
+		this.keywords = keywords;
 	}
+
 	public String getAuthors() {
-		return _authors;
+		return authors;
 	}
-	public void setAuthors(String _authors) {
-		this._authors = _authors;
+
+	public void setAuthors(String authors) {
+		this.authors = authors;
 	}
+
 	public String getAbstract() {
 		return _abstract;
 	}
+
 	public void setAbstract(String _abstract) {
 		this._abstract = _abstract;
 	}
+
 	public String getPublicationDate() {
-		return _publicationDate;
+		return publicationDate;
 	}
-	public void setPublicationDate(String _publicationDate) {
-		this._publicationDate = _publicationDate;
+
+	public void setPublicationDate(String publicationDate) {
+		this.publicationDate = publicationDate;
 	}
-	public String getLanguage(){
-		return _language;
+
+	public String getVolume() {
+		return volume;
 	}
-	public void setLanguage(String _language) {
-		this._language = _language;
+
+	public void setVolume(String volume) {
+		this.volume = volume;
 	}
-	
+
+	public String getPages() {
+		return pages;
+	}
+
+	public void setPages(String pages) {
+		this.pages = pages;
+	}
+
+	public String getIssue() {
+		return issue;
+	}
+
+	public void setIssue(String issue) {
+		this.issue = issue;
+	}
+
+	public String getContainer() {
+		return container;
+	}
+
+	public void setContainer(String container) {
+		this.container = container;
+	}
+
+	public String getISSN() {
+		return ISSN;
+	}
+
+	public void setISSN(String iSSN) {
+		ISSN = iSSN;
+	}
+
+	public String getLanguage() {
+		return language;
+	}
+
+	public void setLanguage(String language) {
+		this.language = language;
+	}
+
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();

@@ -17,8 +17,8 @@ import org.grobid.core.mock.MockContext;
 import org.grobid.core.utilities.GrobidProperties;
 import org.grobid.core.utilities.GrobidPropertyKeys;
 
+import model.Document;
 import play.Configuration;
-import services.Bibliography;
 import services.DocumentParser;
 import services.Utils;
 
@@ -96,7 +96,7 @@ public final class GrobIDDocumentParser implements DocumentParser{
 
 	@Override
 	public void parseReferences(String filename) {
-		references = engine.processReferences(new File(filename), false);
+		references = engine.processReferences(new File(filename), consolidate);
 	}
 
 	@Override
@@ -119,16 +119,7 @@ public final class GrobIDDocumentParser implements DocumentParser{
 
 	@Override
 	public String getLanguage() {
-		if ( metadata.getLanguage() != null ){
-			switch (metadata.getLanguage()){
-			//languages are encoded in ISO 3166
-			case "en":
-				return "english";
-			default:
-				return "english";
-			}
-		}
-		return "english";
+		return Utils.languageToISO3166(metadata.getLanguage());
 	}
 	
 	@Override
@@ -168,23 +159,80 @@ public final class GrobIDDocumentParser implements DocumentParser{
 			return metadata.getKeywords().stream().map(s -> s.getKeyword().toString()).collect(Collectors.joining(", "));
 		return null;
 	}
+	
+	@Override
+	public String getContainer() {
+		String container = null;
+		if ( metadata.getJournal() != null )
+			container = metadata.getJournal();
+		else if (metadata.getBookTitle() != null)
+			container = metadata.getBookTitle();
+		else if ( metadata.getEvent() != null )
+			container = metadata.getEvent();
+		return container;
+	}
 
 	@Override
-	public List<Bibliography> getReferences() {
-		List<Bibliography> refs = new ArrayList<>(references.size());
+	public String getIssue() {
+		return metadata.getIssue();
+	}
+
+	@Override
+	public String getISSN() {
+		return metadata.getISSN() != null ? metadata.getISSN() : metadata.getISSNe();
+	}
+
+	@Override
+	public String getPages() {
+		return metadata.getPageRange() != null ? metadata.getPageRange() : (
+				metadata.getBeginPage() + "-" + metadata.getEndPage());
+	}
+
+	@Override
+	public String getVolume() {
+		return metadata.getVolume();
+	}
+
+	@Override
+	public List<Document> getReferences() {
+		List<Document> refs = new ArrayList<>(references.size());
 		for(BibDataSet bds : references){
-			BiblioItem item = bds.getResBib();
-			Bibliography bib = new Bibliography();
-			String str = Utils.normalizePerson(item.getFullAuthors());
-			bib.setAuthors(str != null ? str.toLowerCase() : null);
-			bib.setTitle(item.getTitle() != null ? item.getTitle().toLowerCase() : null);
-			bib.setDOI(item.getDOI() != null ? item.getDOI().toLowerCase() : null);
-			bib.setJournal(item.getJournal() != null ? item.getJournal().toLowerCase() : null);
-			bib.setPublicationDate( Utils.sanitizeYear(item.getPublicationDate() == null ? 
-					item.getYear() : item.getPublicationDate()));
-			refs.add(bib);
+			BiblioItem bib = bds.getResBib();
+			Document ref = new Document();
+			
+			ref.setDOI(bib.getDOI());
+			ref.setAuthors(bib.getAuthors());
+			ref.setTitle(bib.getTitle());
+			ref.setAbstract(bib.getAbstract());
+			ref.setIssue(bib.getIssue());
+			if (bib.getKeywords() != null && !bib.getKeywords().isEmpty() )
+				ref.setKeywords(bib.getKeywords().stream().map(s -> s.getKeyword().toString()).collect(Collectors.joining(", ")));
+			ref.setLanguage(Utils.languageToISO3166(bib.getLanguage()));
+			ref.setPages(bib.getPageRange());
+			ref.setVolume(bib.getVolume());
+			
+			// Set Container ISSN
+			if ( bib.getISSN() != null )
+				ref.setISSN(bib.getISSN());
+			else if (bib.getISSNe() != null )
+				ref.setISSN(bib.getISSNe());
+			
+			// Set Container Name
+			if ( bib.getJournal() != null )
+				ref.setContainer(bib.getJournal());
+			else if ( bib.getEvent() != null )
+				ref.setContainer(bib.getEvent());
+			else if ( bib.getBookTitle() != null )
+				ref.setContainer(bib.getBookTitle());
+			
+			//Set publication date
+			if ( bib.getPublicationDate() != null )
+				ref.setPublicationDate( bib.getPublicationDate() );
+			else if ( bib.getYear() != null ) 
+				ref.setPublicationDate( bib.getYear() );
+			
+			refs.add(ref);
 		}
 		return refs;
 	}
-
 }
