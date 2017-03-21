@@ -2,8 +2,12 @@
 ### Installation
 * Install Play! Framework:
     * Download and install Play! Framework: [play]
-* Install Neo4j graph database:
-    * Download and install Neo4j server: [neo4j]
+* Install PostgreSQL :
+    * Download and install PostgreSQL server: [pgsql]
+
+### Creating Database and Schema
+* Create database in pgSQL
+* Use the SQL file locate at db/database-schema.sql to create the database schema.
 
 ### Compile
 * Compile using Play! activator:
@@ -32,6 +36,6 @@ Application will start, usaully at http://localhost:9000
 [//]: # (These are reference links used in the body of this note and get stripped out when the markdown processor does its job. There is no need to format nicely because it shouldn't be seen. Thanks SO - http://stackoverflow.com/questions/4823468/store-comments-in-markdown-syntax)
 
    [play]: <https://www.playframework.com>
-   [neo4j]: <https://neo4j.com>
+   [pgsql]: <https://www.postgresql.org>
   
 
