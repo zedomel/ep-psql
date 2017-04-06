@@ -26,8 +26,9 @@ libraryDependencies ++= Seq(
   "xerces" % "xercesImpl" % "2.11.0",
   "directory-naming" % "naming-java" % "0.8",
   "com.fasterxml.jackson.core" % "jackson-databind" % "2.8.7",
-  "org.jblas" % "jblas" % "1.2.4"
-//  "com.google.guava" % "guava" % "16.0.1"
+  "com.fasterxml.jackson.core" % "jackson-annotations" % "2.8.7",
+  "org.jblas" % "jblas" % "1.2.4",
+  "org.apache.commons" % "commons-math3" % "3.6.1"
 )
 
 //dependencyOverrides += "com.fasterxml.jackson.core" % "jackson-annotations" % "2.8.4"
