@@ -3,11 +3,14 @@ package controllers;
 import javax.inject.Inject;
 import javax.inject.Named;
 
+import play.data.Form;
+import play.data.FormFactory;
 import play.mvc.Controller;
 import play.mvc.Result;
 import play.routing.JavaScriptReverseRouter;
 import services.search.DocumentSearcher;
-import views.html.index;
+import views.formdata.QueryData;
+import views.html.Index;
 
 /**
  * This controller contains an action to handle HTTP requests
@@ -20,9 +23,12 @@ public class HomeController extends Controller {
 	 */
 	private final DocumentSearcher docSearcher;
 	
+	private final FormFactory formFactory;
+	
 	@Inject
-	public HomeController(@Named("docSearcher") DocumentSearcher docSearcher) {
+	public HomeController(@Named("docSearcher") DocumentSearcher docSearcher, FormFactory formFactory) {
 		this.docSearcher = docSearcher;
+		this.formFactory = formFactory;
 	}
 
     /**
@@ -32,7 +38,8 @@ public class HomeController extends Controller {
      * <code>GET</code> request with a path of <code>/</code>.
      */
     public Result index() {
-        return ok(index.render());
+    	Form<QueryData> queryData = formFactory.form(QueryData.class);
+        return ok(Index.render(queryData));
     }
    
     /**
@@ -40,10 +47,16 @@ public class HomeController extends Controller {
      * @param term the search term
      * @return Play result as Json
      */
-    public Result search(String term){
+    public Result search(){
+    	
+    	Form<QueryData> queryData = formFactory.form(QueryData.class).bindFromRequest();
+    	if ( queryData.hasErrors() ){
+    		return ok();
+    	}
+    	
     	String jsonResult;
 		try {
-			jsonResult = docSearcher.search(term, false, 100);
+			jsonResult = docSearcher.search(queryData.get(), false, -1);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -53,15 +66,15 @@ public class HomeController extends Controller {
     }
     
     
-    public Result addDocument(String directory){
+//    public Result addDocument(String directory){
 //    	try {
 //			indexer.addDocuments(directory);
 //		} catch (IOException e) {
 //			// TODO Auto-generated catch block
 //			e.printStackTrace();
 //		}
-    	return ok(index.render());
-    }
+//    	return ok(index.render());
+//    }
 
     /**
      * Create javascript routes for this controller

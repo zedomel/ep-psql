@@ -20,7 +20,7 @@ import org.grobid.core.utilities.GrobidPropertyKeys;
 import model.Document;
 import play.Configuration;
 import services.DocumentParser;
-import services.Utils;
+import utils.Utils;
 
 /**
  * GROBID document parser.
@@ -42,7 +42,7 @@ public final class GrobIDDocumentParser implements DocumentParser{
 	private final boolean consolidate;
 
 	public GrobIDDocumentParser() throws Exception {
-		this(false);
+		this(true);
 	}
 
 	/**

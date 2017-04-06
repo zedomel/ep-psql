@@ -1,6 +1,12 @@
 package services;
 
-import org.jblas.DoubleMatrix;
+import cern.colt.matrix.DoubleMatrix1D;
+import cern.colt.matrix.DoubleMatrix2D;
+import cern.colt.matrix.impl.DenseDoubleMatrix1D;
+import cern.colt.matrix.impl.SparseDoubleMatrix1D;
+import cern.colt.matrix.impl.SparseDoubleMatrix2D;
+import cern.colt.matrix.linalg.Algebra;
+import cern.jet.math.Functions;
 
 public class PageRank {
 
@@ -10,13 +16,13 @@ public class PageRank {
 
 	}
 
-	public DoubleMatrix pageRank(DoubleMatrix graph, double c){
+	public DoubleMatrix1D pageRank(DoubleMatrix2D graph, double c){
 
-		final int n = graph.columns;
+		final int n = graph.columns();
 		final double invN = 1.0 / n;
 		double e = (1.0 - c) / n;
 
-		final DoubleMatrix x = new DoubleMatrix(n);
+		DoubleMatrix1D x = new SparseDoubleMatrix1D(n);
 		
 		final int[] indices = new int[n];
 		for( int i = 0; i < n; i++ )
@@ -25,33 +31,34 @@ public class PageRank {
 		for( int i = 0; i < n; i++ ){
 
 			boolean isSink = true;
-			graph.getRow(i,x);
+			x = graph.viewRow(i);
 
 			for( int j = 0; j < n; j++){
-				if ( x.get(j) != 0){
+				if ( x.getQuick(j) != 0){
 					isSink = false;
 					break;
 				}
 			}
 			if (isSink)
-				x.put(indices, c * invN + e);
+				x.viewSelection(indices).assign(c * invN + e);
 			else{
-				x.muli(c).addi(e);
+				x.assign(Functions.mult(c)).assign(Functions.plus(e));
 			}
 			
-			graph.putRow(i, x);
+//			graph.putRow(i, x);
 		}
 
-		DoubleMatrix graphT = graph.transpose();
+		DoubleMatrix2D graphT = graph.viewDice();
 
-		DoubleMatrix rank = new DoubleMatrix(n);
-		rank.put(indices, invN);
+		DoubleMatrix1D rank = new DenseDoubleMatrix1D(n);
+		rank.viewSelection(indices).assign(invN);
 
+		Algebra alg = new Algebra();
 		while(true){
-			DoubleMatrix lastRank = rank.dup();
-			rank = graphT.mmul(rank);
-			DoubleMatrix diff = rank.sub(lastRank);
-			double norm1 = diff.norm1();
+			DoubleMatrix1D lastRank = rank.copy();
+			rank = alg.mult(graphT, rank);
+			DoubleMatrix1D diff = rank.copy().assign(lastRank, Functions.minus);
+			double norm1 = alg.norm1(diff);
 			if ( norm1 <= EPS)
 				break;
 		}
@@ -75,11 +82,11 @@ public class PageRank {
 				{    0,    0,    0,    0,    1,    0,    0,    0,    0,    0,    0 },
 		};
 
-		DoubleMatrix graph = new DoubleMatrix(data);
+		DoubleMatrix2D graph = new SparseDoubleMatrix2D(data);
 
 		PageRank pageRank = new PageRank();
 
-		DoubleMatrix rank = pageRank.pageRank(graph, 0.85);
+		DoubleMatrix1D rank = pageRank.pageRank(graph, 0.85);
 
 		for(int i = 0; i < 11; i++)
 			System.out.println(String.format("%.6f", rank.get(i)));

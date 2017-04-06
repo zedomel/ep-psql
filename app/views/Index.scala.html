@@ -1,0 +1,76 @@
+@import views.formdata.QueryData
+
+@(queryData:  Form[QueryData])
+
+@import helper._
+ 
+ <!DOCTYPE html>
+<html lang="en">
+    <head>
+        @* Here's where we render the page title `String`. *@
+        <title>Welcome</title>
+        <link rel="stylesheet" media="screen" href="@routes.Assets.versioned("stylesheets/main.css")">
+        <link rel="stylesheet" media="screen" href="@routes.Assets.versioned("stylesheets/bootstrap.min.css")">
+        
+        <link rel="shortcut icon" type="image/png" href="@routes.Assets.versioned("images/favicon.png")">
+        <script src="@routes.Assets.versioned("javascripts/jquery-3.1.0.js")" type="text/javascript"></script>
+        <script src="@routes.Assets.versioned("javascripts/bootstrap.min.js")" type="text/javascript"></script>
+        <script src="@routes.Assets.versioned("javascripts/d3.js")" type="text/javascript"></script>
+        <script src="@routes.Assets.versioned("javascripts/d3-scale-chromatic.js")" type="text/javascript"></script>
+        <script src="@routes.Assets.versioned("javascripts/query.js")" type="text/javascript"></script>
+        <script type="text/javascript" src="@routes.HomeController.javascriptRoutes"></script>
+    </head>
+    <body>	
+    <div class="container">
+    	<div class="well">
+    		<form id="searchForm">
+    			<div class="row form-inline simple-search">
+	    			<div class="col-sm-9">
+	    				<input type="text" id="terms" name="terms" class="form-control">
+	    			</div>
+	    			<div class="col-sm-1">
+		    			<select id="operator" name="operator" class="form-control">
+		                	<option value="or">OR</option>
+		                	<option value="and">AND</option>
+		        		</select>
+	        		 </div>
+	        		 <div class="col-sm-2 search-buttons">
+		        			<button type="submit" id="search" class="btn btn-primary">Search</button>
+		        			<button id="advanced-search-btn" type="button" class="btn btn-default" aria-label="Left Align">
+		  						<span class="glyphicon glyphicon-chevron-down" aria-hidden="true"></span>
+							</button>
+					</div>
+				</div>
+				<div class="advanced-search form-horizontal">
+					<div class="form-group">
+						<label for="author" class="col-sm-3">Authors:</label>
+						<div class="col-sm-9">
+							<input type="text" class="form-control" id="author">
+						</div>
+					</div>
+					<div class="form-group">
+						<label for="year-start" class="col-sm-3">Publication year between:</label>
+						<div class="col-sm-9">
+						<input type="text" class="form-control auto-width col-sm-4" id="year-start" size="4" maxlength="4" pattern="[0-9]*">
+						<span class="col-sm-1"> - </span>  
+						<input type="text" class="form-control auto-width col-sm-4" id="year-end" size="4" maxlength="4" pattern="[0-9]*">
+						</div>
+					</div>
+					<div class="form-group">
+						<label for="num-clusters" class="col-sm-3">Number of clusters:</label>
+						<div class="col-sm-9">
+							<input type="number" id="num-clusters" class="form-control auto-width" value="10">
+						</div>
+					</div>
+				</div>
+    		</form>
+    	</div>
+    	<div class="viz-options">
+    		<button id="reset-btn" class="btn btn-danger">Reset</button>
+    	</div>
+    </div>
+       	<svg id="visualization" class="visualization">
+       	
+       	</svg>
+    </body>
+</html>

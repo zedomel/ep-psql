@@ -1,26 +1,30 @@
 package model;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * Class to hold document returned from 
- * a search in the lucene index.
- * It is convenient to encode/decode 
- * into/from Json.
  * @author jose
  *
  */
-public class ResultDocument implements Serializable{
+public class SimpleDocument implements Serializable{
 	
 	/**
 	 * Default serial id
 	 */
 	private static final long serialVersionUID = 2325490618164049148L;
+	
+	private long docId;
+	
+	private String DOI;
 
 	/**
 	 * Document score
 	 */
-	private float score;
+	private double score;
+	
+	private double relevance;
 	
 	/**
 	 * Document title
@@ -37,33 +41,53 @@ public class ResultDocument implements Serializable{
 	 */
 	private String keywords;
 	
-	/**
-	 * Document filename
-	 */
-	private String filename;
+	private String publicationDate;
 	
-	/**
-	 * String list of document's references
-	 */
-	private String references;
+	private double x;
+	
+	private double y;
+	
+	private int cluster;
 
 	/**
 	 * Total number of citations
 	 */
 	private long numberOfCitations;
 	
+	private List<Long> references;
+	
 	/**
 	 * Creates a empty {@link ResultDocument}
 	 */
-	public ResultDocument() {
+	public SimpleDocument() {
+		references = new ArrayList<>();
+	}
 	
+	public List<Long> getReferences() {
+		return references;
+	}
+	
+	public void setReferences(List<Long> references) {
+		this.references = references;
+	}
+	
+	public void addReference(long refId){
+		references.add(refId);
+	}
+	
+	public int getCluster() {
+		return cluster;
+	}
+	
+	public void setCluster(int cluster) {
+		this.cluster = cluster;
 	}
 	
 	/**
 	 * Get document's score
 	 * @return document's score as a float
 	 */
-	public float getScore() {
+	public double getScore() {
 		return score;
 	}
 
@@ -71,7 +95,7 @@ public class ResultDocument implements Serializable{
 	 * Set document's score
 	 * @param score as float
 	 */
-	public void setScore(float score) {
+	public void setScore(double score) {
 		this.score = score;
 	}
 
@@ -125,38 +149,6 @@ public class ResultDocument implements Serializable{
 	}
 
 	/**
-	 * Get document's filename
-	 * @return filename
-	 */
-	public String getFilename() {
-		return filename;
-	}
-
-	/**
-	 * Set document's filename.
-	 * @param filename
-	 */
-	public void setFilename(String filename) {
-		this.filename = filename;
-	}
-
-	/**
-	 * Get document's references
-	 * @return references
-	 */
-	public String getReferences() {
-		return references;
-	}
-
-	/**
-	 * Set document's references
-	 * @param references
-	 */
-	public void setReferences(String references) {
-		this.references = references;
-	}
-
-	/**
 	 * Get document's total number of citations.
 	 * @return number of citations.
 	 */
@@ -170,5 +162,53 @@ public class ResultDocument implements Serializable{
 	 */
 	public void setNumberOfCitations(long numberOfCitations) {
 		this.numberOfCitations = numberOfCitations;
+	}
+
+	public long getDocId() {
+		return docId;
+	}
+
+	public void setDocId(long docId) {
+		this.docId = docId;
+	}
+
+	public String getDOI() {
+		return DOI;
+	}
+
+	public void setDOI(String dOI) {
+		DOI = dOI;
+	}
+
+	public double getRelevance() {
+		return relevance;
+	}
+
+	public void setRelevance(double relevance) {
+		this.relevance = relevance;
+	}
+
+	public String getPublicationDate() {
+		return publicationDate;
+	}
+
+	public void setPublicationDate(String publicationDate) {
+		this.publicationDate = publicationDate;
+	}
+
+	public double getX() {
+		return x;
+	}
+
+	public void setX(double x) {
+		this.x = x;
+	}
+
+	public double getY() {
+		return y;
+	}
+
+	public void setY(double y) {
+		this.y = y;
 	}
 }

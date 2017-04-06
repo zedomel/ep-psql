@@ -33,6 +33,14 @@ public class Document {
 	private String ISSN;
 	
 	private String language;
+	
+	private double x;
+	
+	private double y;
+	
+	private double relevance;
+	
+	private double rank;
 
 	/**
 	 * Cria um novo documento
@@ -143,6 +151,38 @@ public class Document {
 
 	public void setLanguage(String language) {
 		this.language = language;
+	}
+
+	public double getX() {
+		return x;
+	}
+
+	public void setX(double x) {
+		this.x = x;
+	}
+
+	public double getY() {
+		return y;
+	}
+
+	public void setY(double y) {
+		this.y = y;
+	}
+
+	public double getRelevance() {
+		return relevance;
+	}
+
+	public void setRelevance(double relevance) {
+		this.relevance = relevance;
+	}
+
+	public double getRank() {
+		return rank;
+	}
+
+	public void setRank(double rank) {
+		this.rank = rank;
 	}
 
 	@Override

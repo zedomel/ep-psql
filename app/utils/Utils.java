@@ -1,10 +1,12 @@
-package services;
+package utils;
 
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.grobid.core.data.Person;
+
+import services.Bibliography;
 
 public final class Utils {
 
@@ -30,15 +32,6 @@ public final class Utils {
 		if (text != null)
 			return text.replaceAll("[,|;|\\.|-]", "");
 		return "";
-	}
-
-	public static String sanitizeYear(String year) {
-		if (year == null)
-			return null;
-		Matcher m = YEAR_PATTERN.matcher(year);
-		if (m.matches())
-			return m.group(1);
-		return year;
 	}
 
 	public static String normalizePerson(List<Person> authors) {
@@ -86,6 +79,22 @@ public final class Utils {
 			}
 		}
 		return "english";
+	}
+
+	public static int extractYear(String publicationDate) {
+		if (publicationDate == null)
+			return 0;
+		String year;
+		Matcher m = YEAR_PATTERN.matcher(publicationDate);
+		if (m.matches())
+			year = m.group(1);
+		else 
+			year = publicationDate;
+		
+		try{
+			return Integer.parseInt(year);
+		}catch (NumberFormatException e) {}
+		return 0;
 	}
 
 }

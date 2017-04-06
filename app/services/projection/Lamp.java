@@ -1,82 +1,134 @@
 package services.projection;
 
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Random;
+import java.util.Set;
 
 import org.jblas.DoubleMatrix;
-import org.jblas.MatrixFunctions;
-import org.jblas.Singular;
 import org.jblas.ranges.RangeUtils;
+
+import cern.colt.matrix.DoubleFactory1D;
+import cern.colt.matrix.DoubleFactory2D;
+import cern.colt.matrix.DoubleMatrix1D;
+import cern.colt.matrix.DoubleMatrix2D;
+import cern.colt.matrix.impl.DenseDoubleMatrix2D;
+import cern.colt.matrix.linalg.Algebra;
+import cern.colt.matrix.linalg.SingularValueDecomposition;
+import cern.jet.math.Functions;
 
 public class Lamp {
 
 	private static final double TOL = 1e-6;
+	
+	private final Random rng;
 
 	public Lamp() {
-
+		rng = new Random();
+	}
+	
+	public DoubleMatrix2D project(DoubleMatrix2D x){
+		DoubleMatrix2D xs, ys;
+		
+		// Seleciona control points aleatoriamente
+		int n = (int) Math.sqrt( x.rows() );
+		Set<Integer> sample = new HashSet<>(n);
+		while( sample.size() < n ){
+			Integer next = rng.nextInt( x.rows() );
+			sample.add(next);
+		}
+		
+		int[] cpoints = new int[n];
+		Iterator<Integer> iter = sample.iterator();
+		for(int j = 0; j < n && iter.hasNext(); j++){
+			cpoints[j] = iter.next();
+		}
+		
+		// Projeta control points usando MDS
+		ForceScheme forceScheme = new ForceScheme();
+		xs = x.viewSelection(cpoints, null).copy();
+		ys = forceScheme.project(xs);
+		
+		// Projeta restante dos pontos
+		return project(x, cpoints, ys);
 	}
 
-	public DoubleMatrix project(DoubleMatrix x, DoubleMatrix xs, DoubleMatrix ys){
+	public DoubleMatrix2D project(DoubleMatrix2D x, int[] cpoints, DoubleMatrix2D ys){
 
-		int ninst = x.rows,
-				dim = x.columns;
-		int k = xs.rows,
-				a = xs.columns;
-		int p = ys.columns;
+		DoubleMatrix2D xs = x.viewSelection(cpoints, null).copy();
+		
+		int ninst = x.rows(),
+				dim = x.columns();
+		int k = cpoints.length,
+				a = xs.columns();
+		int p = ys.columns();
 
 		assert dim == a;
 
-		DoubleMatrix Y = DoubleMatrix.zeros(ninst, p);
+		final Algebra alg = new Algebra();
+		DoubleMatrix2D Y = DoubleFactory2D.sparse.make(ninst, p, 0.0);
+		
 		for (int pt = 0; pt < ninst; pt++){
 			// Computes alphas
-			DoubleMatrix alpha = DoubleMatrix.zeros(k);
+			DoubleMatrix1D alpha = DoubleFactory1D.sparse.make(k, 0.0);
+			boolean skip = false;
 			for( int i = 0; i < k; i++){
 				// Verify if the point to be projected is a control point
 				// avoids division by zero
-				double norm2 = xs.getRow(i).sub(x.getRow(pt)).norm2();
-				if ( norm2 < TOL )
-					alpha.put(i, Float.MAX_VALUE);
-				else
-					alpha.put(i, 1.0 / (norm2*norm2));
+				double norm2 = alg.norm2( xs.viewRow(i).copy().assign(x.viewRow(pt), Functions.minus)); 
+				if ( norm2 < TOL ){
+					// point is too close to sample point; position them equally
+					Y.viewRow(pt).assign(ys.viewRow(i));
+					skip = true;
+					break;
+				}
+				
+				alpha.setQuick(i, 1.0 / norm2);
 			}
+			
+			if ( skip )
+				continue;
 
+			double alphaSum = alpha.zSum();
+			
 			// Computes x~ and y~ (eq. 3)
-			DoubleMatrix xtilde = DoubleMatrix.zeros(dim);
-			DoubleMatrix ytilde = DoubleMatrix.zeros(p);
+			DoubleMatrix1D xtilde = DoubleFactory1D.dense.make(dim, 0.0);
+			DoubleMatrix1D ytilde = DoubleFactory1D.dense.make(p, 0.0);
 
-			xtilde.addi(alpha.transpose().mmul(xs));
-			ytilde.addi(alpha.transpose().mmul(ys));
+			xtilde = alg.mult(xs.viewDice(), alpha).assign(Functions.div(alphaSum));
+			ytilde = alg.mult(ys.viewDice(), alpha).assign(Functions.div(alphaSum));
 
-			xtilde.divi(alpha.sum());
-			ytilde.divi(alpha.sum());
-
-			DoubleMatrix A = DoubleMatrix.zeros(k, dim),
-					B = DoubleMatrix.zeros(k, p);
-
-			DoubleMatrix xhat = DoubleMatrix.zeros(k, dim),
-					yhat = DoubleMatrix.zeros(k, p);
+			DoubleMatrix2D xhat = xs.copy(), yhat = ys.copy();
 
 			// Computation of x^ and y^ (eq. 6)
-			xhat = xs.subRowVector(xtilde);
-			yhat = ys.subRowVector(ytilde);
-			A = xhat.mulColumnVector(MatrixFunctions.sqrt(alpha));
-			B = yhat.mulColumnVector(MatrixFunctions.sqrt(alpha));
+			for( int i = 0; i < xs.rows(); i++){
+				xhat.viewRow(i).assign(xtilde, Functions.minus);
+				yhat.viewRow(i).assign(ytilde, Functions.minus);
+			}
+			
+			DoubleMatrix2D At, B;
+			
+			// Sqrt(alpha)
+			alpha.assign(Functions.sqrt);
+			for(int i = 0; i < xhat.columns(); i++ )
+				xhat.viewColumn(i).assign(alpha, Functions.mult);
+			for(int i = 0; i < yhat.columns(); i++ )
+				yhat.viewColumn(i).assign(alpha, Functions.mult);
+			
+			At = xhat.viewDice();
+			B = yhat;
 
-			DoubleMatrix[] udv = Singular.fullSVD( A.transpose().mmul(B) );
-			DoubleMatrix U = udv[0], V = udv[2];
+			SingularValueDecomposition svd = new SingularValueDecomposition( At.zMult(B, null) );
+			DoubleMatrix2D U = svd.getU(), V = svd.getV();
 
-			// VV is the matrix V filled with zeros
-			DoubleMatrix VV = DoubleMatrix.zeros(dim, p); // Size of U = dim, by SVD
-			//Size of V = p, by SVD
-			final int[] rangep = new int[p];
-			for( int i = 0; i < p; i++)
-				rangep[i] = i;
-
-			for( int i = 0; i < p; i++)
-				VV.putRow(i, V.getRow(i));
-
-			DoubleMatrix M = U.mmul(VV);
-
-			Y.putRow(pt, x.getRow(pt).sub(xtilde).mmul(M).add(ytilde)); // eq. 8
+			// eq. 7: M = UV
+			DoubleMatrix2D M = U.zMult(V.viewDice(), null); 
+			
+			//eq. 8: y = (x - xtil) * M + ytil
+			DoubleMatrix1D rowX = x.viewRow(pt).copy();
+			rowX = M.viewDice().zMult(rowX.assign(xtilde, Functions.minus),null).assign(ytilde, Functions.plus);
+			Y.viewRow(pt).assign(rowX);
 		}
 
 		return Y;
@@ -85,12 +137,13 @@ public class Lamp {
 	public static void main(String[] args) throws IOException {
 
 		DoubleMatrix data = DoubleMatrix.loadCSVFile("/Users/jose/Documents/freelancer/petricaep/lamp-python/iris.data");
-		DoubleMatrix x = data.getColumns(RangeUtils.interval(0, data.columns-1));
+		
+		DoubleMatrix2D x = new DenseDoubleMatrix2D(data.getColumns(RangeUtils.interval(0, data.columns-1)).toArray2());
 		
 		int[] indices = new int[]{47,   3,  31,  25,  15, 118,  89,   6, 103,  65,  88,  38,  92};
-		DoubleMatrix xs = x.getRows(indices);
 
-		DoubleMatrix ys = new DoubleMatrix(new double[][]{{ 0.64594878, 0.21303289},
+		DoubleMatrix2D ys = new DenseDoubleMatrix2D(new double[][]{
+			{ 0.64594878, 0.21303289},
 			{ 0.71731767,  0.396145  },
 			{ 0.70414944, 0.65089645},
 			{ 0.57139458,  0.4722532 },
@@ -106,10 +159,10 @@ public class Lamp {
 		});
 		
 		Lamp lamp = new Lamp();
-		DoubleMatrix y = lamp.project(x, xs, ys);
+		DoubleMatrix2D y = lamp.project(x, indices, ys);
 		
-		for( int i = 0; i < y.rows; i++){
-			for(int j = 0; j < y.columns; j++)
+		for( int i = 0; i < y.rows(); i++){
+			for(int j = 0; j < y.columns(); j++)
 				System.out.print(String.format("%e ", y.get(i,j)));
 			System.out.println();
 		}

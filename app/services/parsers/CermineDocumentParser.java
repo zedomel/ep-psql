@@ -14,7 +14,7 @@ import pl.edu.icm.cermine.metadata.model.DocumentAuthor;
 import pl.edu.icm.cermine.metadata.model.DocumentDate;
 import pl.edu.icm.cermine.metadata.model.DocumentMetadata;
 import services.DocumentParser;
-import services.Utils;
+import utils.Utils;
 
 /**
  * CERMINE document parser

@@ -1,11 +1,16 @@
 package services;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 import javax.inject.Inject;
+import javax.inject.Named;
 
 import org.grobid.core.mock.MockContext;
 import org.slf4j.Logger;
@@ -18,7 +23,7 @@ import model.Document;
 import play.Configuration;
 import play.db.Database;
 import play.db.DefaultDatabase;
-import services.database.DatabaseParserService;
+import services.database.DatabaseService;
 import services.parsers.GrobIDDocumentParser;
 
 /**
@@ -36,14 +41,55 @@ public class DocumentParserService {
 	 */
 	private DocumentParser documentParser;
 
-	private DatabaseParserService dbService;
+	private DatabaseService dbService;
+	
+	private String TMP_DIR = System.getProperty("java.io.tmpdir");
 
 	@Inject
-	public DocumentParserService( DocumentParser parser, Database db ) throws IOException{
+	public DocumentParserService( @Named("docParser") DocumentParser parser, Database db ) throws IOException{
 		this.documentParser = parser;
-		this.dbService = new DatabaseParserService(db);
+		this.dbService = new DatabaseService(db);
 	}
-
+	
+	public void addDocumentsFromPackage(File packageFile) throws Exception{
+		
+		byte[] buffer = new byte[1024];
+		final String output = TMP_DIR + File.separator + packageFile.getName() + "_" + System.nanoTime();
+		File outputDir = new File(output);
+		if ( !outputDir.mkdirs() )
+			return; //TODO should throw an error here!
+		
+		try ( ZipInputStream zis = new ZipInputStream(new FileInputStream(packageFile));){
+			ZipEntry entry = zis.getNextEntry();
+			
+			while ( entry != null ){
+				if ( entry.isDirectory() || !entry.getName().endsWith(".pdf")){
+					entry = zis.getNextEntry();
+					continue;
+				}
+				
+				File newFile = new File(outputDir + File.separator + entry.getName());
+				try(FileOutputStream fos = new FileOutputStream(newFile)){
+					int len;
+					while ( (len = zis.read(buffer)) > 0){
+						fos.write(buffer, 0, len);
+					}
+				}catch (Exception e) {
+					// TODO: handle exception
+					e.printStackTrace();
+					continue;
+				}
+				
+				entry = zis.getNextEntry();
+			}
+		}catch (Exception e) {
+			// TODO: handle exception
+			throw e;
+		}
+		
+		addDocument(outputDir.getAbsolutePath());
+	}
+	
 	/**
 	 * Import all document in given directory to the index and
 	 * also create Neo4j nodes.
