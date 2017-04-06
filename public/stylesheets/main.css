@@ -1,3 +1,8 @@
+.visualization{
+	width: 100vw;
+	height: 100vh;
+}
+
 div.tooltip {
   position: absolute;
   text-align: center;
@@ -24,10 +29,34 @@ circle {
 .link {
   fill: none;
   stroke: #666;
-  stroke-width: 1.5px;
+ /* stroke-width: 1.5px; */
   visibility: hidden;
 }
 
 .active {
 	visibility: visible !important;
+}
+
+#searchForm .simple-search.form-inline .form-control{
+	width: 100%;
+}
+
+.advanced-search{
+	padding-top: 15px;	
+}
+
+#searchForm .advanced-search .form-group .auto-width{
+	width: auto;
+}
+
+.simple-search .search-buttons{
+	text-align: right;
+}
+
+.advanced-search .form-group span {
+	text-align: center;
+}
+
+.enabled{
+	
 }
