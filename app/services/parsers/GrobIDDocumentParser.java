@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import javax.inject.Singleton;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 
@@ -29,11 +30,12 @@ import utils.Utils;
  * @author jose
  *
  */
+@Singleton
 public final class GrobIDDocumentParser implements DocumentParser{
 
 	private static Engine ENGINE;
 
-	private final Engine engine;
+	private Engine engine;
 
 	private BiblioItem metadata;
 
@@ -64,8 +66,8 @@ public final class GrobIDDocumentParser implements DocumentParser{
 	private void initialize() throws Exception {
 		InitialContext ic = new InitialContext();
 		try{
-			ic.lookup("java:comp/env/" + GrobidPropertyKeys.PROP_GROBID_HOME);
-		}catch(NamingException e){
+			ic.lookup("java:comp/env/" + GrobidPropertyKeys.PROP_GROBID_HOME);	
+		}catch(NamingException e){			
 			Configuration configuration = Configuration.reference();
 			String grobidHome = configuration.getString("grobid.home", "grobid-home");
 			String grobidProperties = configuration.getString("grobid.properties", "grobid-home/config/grobid.properties");
@@ -91,12 +93,12 @@ public final class GrobIDDocumentParser implements DocumentParser{
 	@Override
 	public void parseHeader(String filename) {
 		metadata = new BiblioItem();
-		engine.processHeader(filename, consolidate , metadata);
+		getEngine().processHeader(filename, consolidate , metadata);
 	}
 
 	@Override
 	public void parseReferences(String filename) {
-		references = engine.processReferences(new File(filename), consolidate);
+		references = getEngine().processReferences(new File(filename), consolidate);
 	}
 
 	@Override

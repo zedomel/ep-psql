@@ -57,6 +57,10 @@ circle {
 	text-align: center;
 }
 
-.enabled{
-	
+.form-group .update-btn{
+	padding: 5px 0 5px 0;
+}
+
+.result{
+	padding: 10px;
 }

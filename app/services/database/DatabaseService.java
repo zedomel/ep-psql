@@ -71,9 +71,14 @@ public class DatabaseService {
 
 	private static final String DELETE_DOC = "DELETE FROM documents WHERE doc_id = ?";
 
-	private static final String UPDATE_XY = "UPDATE documents SET x = ?, y = ? WHERE doc_id = ?";
+	private static final String UPDATE_XY = "UPDATE documents_data SET x = ?, y = ? WHERE doc_id = ?";
 
-	private static final String UPDATE_RELEVANCE = "UPDATE documents SET relevance = ? WHERE doc_id = ?";
+	private static final String UPDATE_RELEVANCE = "UPDATE documents_data SET relevance = ? WHERE doc_id = ?";
+
+	private static final String GET_OPTION = "SELECT option_value FROM options WHERE option_name = ? LIMIT 1";
+	
+	private static final String SET_OPTION = "INSERT INTO options(option_name, option_value) VALUES (?,?) ON CONFLICT (option_name)"
+			+ " DO UPDATE SET option_value = EXCLUDED.option_value";
 
 	private Database db;
 
@@ -460,10 +465,10 @@ public class DatabaseService {
 
 			PreparedStatement pstmt = conn.prepareStatement(UPDATE_XY);
 			Statement stmt = conn.createStatement();
-			ResultSet rs = stmt.executeQuery("SELECT id FROM documents WHERE freqs IS NOT NULL ORDER BY doc_id");
+			ResultSet rs = stmt.executeQuery("SELECT doc_id FROM documents WHERE freqs IS NOT NULL ORDER BY doc_id");
 			int doc = 0;
 			while( rs.next() ){
-				long id = rs.getLong("id");
+				long id = rs.getLong("doc_id");
 				pstmt.setDouble(1, y.get(doc, 0));
 				pstmt.setDouble(2, y.get(doc, 1));
 				pstmt.setLong(3, id);
@@ -493,7 +498,7 @@ public class DatabaseService {
 
 		try ( Connection conn = db.getConnection();){
 			Statement stmt = conn.createStatement();
-			ResultSet rs = stmt.executeQuery("SELECT doc_id, ref_id FROM citations ORDER BY doc_id, ref_id'");
+			ResultSet rs = stmt.executeQuery("SELECT doc_id, ref_id FROM citations ORDER BY doc_id, ref_id");
 			DoubleMatrix2D graph = new SparseDoubleMatrix2D(n, n);
 			while( rs.next() ){
 				long docId = rs.getLong(1);
@@ -595,6 +600,31 @@ public class DatabaseService {
 				conn.close();
 		}
 
+	}
+	
+	public String getOption(String op) throws Exception {
+		try ( Connection conn = db.getConnection();){
+			PreparedStatement stmt = conn.prepareStatement(GET_OPTION);
+			stmt.setString(1, op);
+			ResultSet rs = stmt.executeQuery();
+			while( rs.next() ){
+				return rs.getString(1);
+			}
+			return null;
+		}catch( Exception e){
+			throw e;
+		}
+	}
+	
+	public void setOption(String op, String value) throws Exception {
+		try ( Connection conn = db.getConnection();){
+			PreparedStatement stmt = conn.prepareStatement(SET_OPTION);
+			stmt.setString(1, op);
+			stmt.setString(2, value);
+			stmt.executeUpdate();
+		}catch( Exception e){
+			throw e;
+		}
 	}
 
 	public static void main(String[] args) throws Exception {

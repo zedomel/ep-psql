@@ -5,6 +5,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -51,14 +52,15 @@ public class DocumentParserService {
 		this.dbService = new DatabaseService(db);
 	}
 	
-	public void addDocumentsFromPackage(File packageFile) throws Exception{
+	public List<String> addDocumentsFromPackage(File packageFile) throws Exception{
 		
 		byte[] buffer = new byte[1024];
 		final String output = TMP_DIR + File.separator + packageFile.getName() + "_" + System.nanoTime();
 		File outputDir = new File(output);
 		if ( !outputDir.mkdirs() )
-			return; //TODO should throw an error here!
+			return null; //TODO should throw an error here!
 		
+		List<String> documents = new ArrayList<>();
 		try ( ZipInputStream zis = new ZipInputStream(new FileInputStream(packageFile));){
 			ZipEntry entry = zis.getNextEntry();
 			
@@ -80,6 +82,7 @@ public class DocumentParserService {
 					continue;
 				}
 				
+				documents.add(entry.getName());
 				entry = zis.getNextEntry();
 			}
 		}catch (Exception e) {
@@ -87,7 +90,8 @@ public class DocumentParserService {
 			throw e;
 		}
 		
-		addDocument(outputDir.getAbsolutePath());
+		addDocuments(outputDir.getAbsolutePath());
+		return documents;
 	}
 	
 	/**
@@ -258,5 +262,4 @@ public class DocumentParserService {
 			e.printStackTrace(System.err);
 		}
 	}
-
 }
