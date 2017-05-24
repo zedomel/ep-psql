@@ -1,4 +1,10 @@
-# EP - Graph visualization and documents indexing
+# EP -  Visualization of scientic documents using Multidimensional Projection
+
+### Screenshots
+
+![Screenshot 1][image1]
+![Screenshot 1][image2]
+
 ### Installation
 * Install Play! Framework:
     * Download and install Play! Framework: [play]
@@ -65,3 +71,5 @@ Replacing the application secret for your secret generated before.
    [pgsql]: <https://www.postgresql.org>
   
 
+[image1]: https://github.com/zedomel/ep-psql/raw/master/screenshots/image1.png
+[image2]: https://github.com/zedomel/ep-psql/raw/master/screenshots/image2.png
