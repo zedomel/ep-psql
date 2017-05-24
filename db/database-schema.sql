@@ -3,7 +3,9 @@ DROP TRIGGER IF EXISTS tsvector_doc_update_freq ON documents;
 
 DROP TABLE IF EXISTS citations;
 DROP TABLE IF EXISTS documents_data;
+DROP TABLE IF EXISTS document_authors;
 DROP TABLE IF EXISTS documents;
+DROP TABLE IF EXISTS authors;
 DROP TABLE IF EXISTS options;
 
 CREATE TABLE options(
@@ -18,7 +20,6 @@ CREATE TABLE documents (
 	doc_id				bigserial PRIMARY KEY,
 	doi					varchar(100) UNIQUE,
 	title				text,
-	authors 			text,
 	keywords 			text,
 	abstract 			text,
 	publication_date	int,
@@ -30,6 +31,20 @@ CREATE TABLE documents (
 	language			regconfig,
 	tsv					tsvector,
 	freqs				jsonb
+);
+
+CREATE TABLE authors (
+	aut_id		bigserial PRIMARY KEY,
+	aut_name	varchar(500),
+	aut_name_tsv	tsvector,
+	UNIQUE(aut_name)
+);
+
+CREATE TABLE document_authors(
+	id			bigserial PRIMARY KEY,
+	doc_id		bigint REFERENCES documents(doc_id) ON UPDATE CASCADE ON DELETE CASCADE,
+	aut_id		bigint REFERENCES authors(aut_id) ON UPDATE CASCADE ON DELETE CASCADE,
+	UNIQUE(doc_id,aut_id)
 );
 
 CREATE TABLE documents_data (
@@ -51,6 +66,16 @@ CREATE INDEX source_idx ON citations(doc_id);
 CREATE INDEX target_idx ON citations(ref_id);
 
 ALTER TABLE citations ADD CONSTRAINT no_self_loops_chk CHECK (doc_id <> ref_id);
+
+CREATE OR REPLACE FUNCTION authors_trigger() RETURNS TRIGGER AS $authors_trigger$
+	BEGIN
+  		new.aut_name_tsv := to_tsvector(coalesce(new.aut_name,''));
+  	return new;
+	END;
+$authors_trigger$ LANGUAGE plpgsql;
+
+CREATE TRIGGER tsvector_aut_update BEFORE INSERT OR UPDATE
+    ON authors FOR EACH ROW EXECUTE PROCEDURE authors_trigger();
 
 CREATE OR REPLACE FUNCTION documents_trigger() RETURNS TRIGGER AS $documents_trigger$
 	BEGIN
@@ -98,4 +123,17 @@ $documents_data_trigger$ LANGUAGE plpgsql;
 
 CREATE TRIGGER document_data_insert AFTER INSERT ON documents
 	FOR EACH ROW EXECUTE PROCEDURE documents_data();
-	
+
+CREATE OR REPLACE FUNCTION array_to_tsvector2(arr tsvector[]) RETURNS tsvector AS $array_to_tsvector2$
+	DECLARE
+		tsv tsvector := '';
+		e tsvector;
+	BEGIN
+		FOREACH e IN ARRAY arr
+		LOOP
+			tsv := tsv || e;
+		END LOOP;
+		
+		RETURN tsv;
+	END;
+$array_to_tsvector2$ LANGUAGE plpgsql;
