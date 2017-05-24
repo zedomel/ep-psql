@@ -4,7 +4,6 @@ import play.data.validation.Constraints.Required;
 
 public class QueryData {
 	
-	@Required
 	protected String terms;
 	
 	@Required
@@ -74,5 +73,13 @@ public class QueryData {
 
 	public void setYearEnd(String yearEnd) {
 		this.yearEnd = yearEnd;
+	}
+
+	public int getNumClusters() {
+		return numClusters;
+	}
+	
+	public void setNumClusters(int numClusters) {
+		this.numClusters = numClusters;
 	}
 }

@@ -1,5 +1,7 @@
 package services.search;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -10,8 +12,9 @@ import javax.inject.Inject;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import cern.colt.matrix.DoubleMatrix1D;
 import cern.colt.matrix.DoubleMatrix2D;
-import model.SimpleDocument;
+import model.Document;
 import play.db.Database;
 import services.clustering.KMeans;
 import services.database.DatabaseService;
@@ -22,8 +25,6 @@ public class LocalDocumentSearcher implements DocumentSearcher {
 	private static final Pattern TERM_PATTERN = Pattern.compile(".*(\".*?\").*");
 
 	private DatabaseService dbService;
-
-	private int clusters = 10;
 
 	@Inject
 	public LocalDocumentSearcher(Database db) {
@@ -49,44 +50,79 @@ public class LocalDocumentSearcher implements DocumentSearcher {
 	public String search(QueryData queryData, boolean fetchNumberOfCitations, int count) throws Exception {
 
 		String query = buildQuery(queryData);
+		Map<String, Object> result = new HashMap<>();
+
+		List<Document> docs;
 		
-		List<SimpleDocument> docs;
 		if ( ! queryData.getAuthor().isEmpty() || ! queryData.getYearStart().isEmpty() || ! queryData.getYearEnd().isEmpty() )
 			docs = dbService.getAdvancedSimpleDocuments(query, queryData.getAuthor(), queryData.getYearStart(), 
 					queryData.getYearEnd(), count);
-		else
+		else if ( query != null )
 			docs = dbService.getSimpleDocuments(query, count);
+		else
+			docs = dbService.getAllSimpleDocuments();
+		
+		if( docs.size() > 0){
 
-		long docIds[] = new long[docs.size()];
-		int i = 0;
-		for( SimpleDocument doc :  docs){
-			docIds[i] = doc.getDocId();
-			++i;
+			long docIds[] = new long[docs.size()];
+			int i = 0;
+			double maxX = docs.get(0).getX(), minX = docs.get(0).getX(), 
+					maxY = docs.get(0).getY() , minY = docs.get(0).getY();
+
+			for( Document doc :  docs){
+				docIds[i] = doc.getDocId();
+
+				//Update X max/min coordinates
+				if ( doc.getX() > maxX )
+					maxX = doc.getX();
+				if ( doc.getX() < minX )
+					minX = doc.getX();
+
+				//Update Y max/min coordinates
+				if ( doc.getY() > maxY )
+					maxY = doc.getY();
+				if ( doc.getY() < minY )
+					minY = doc.getY();
+
+				++i;
+			}
+			
+			// References
+			Map<Long, List<Long>> references = dbService.getReferences(docIds);
+			for(Document doc : docs){
+				doc.setReferences(references.get(doc.getDocId()));
+			}
+			
+			DoubleMatrix2D matrix = dbService.buildFrequencyMatrix(docIds);
+			
+			assert docs.size() == matrix.rows();
+
+			//Clustering
+			final int numClusters = queryData.getNumClusters();
+			
+			KMeans kmeans = new KMeans();
+			kmeans.cluster(matrix, numClusters);
+			DoubleMatrix1D clusters = kmeans.getClusterAssignments();
+
+			//Normalize <x,y> coordinates to [-1,1]
+			i = 0;
+			for( Document doc : docs){
+				doc.setX( 2 * (doc.getX() - minX)/(maxX-minX) - 1 );
+				doc.setY( 2 * (doc.getY() - minY)/(maxY-minY) - 1 );
+				doc.setCluster((int)clusters.get(i));
+				++i;
+			}
+
+			// Sort by relevance (descending)
+			docs.sort(Comparator.comparing((Document d) -> d.getRelevance()).reversed());
+
+			result.put("documents", docs);
+			result.put("nclusters", numClusters);
 		}
-
-		// Referencias
-		Map<Long, List<Long>> references = dbService.getReferences(docIds);
-		for(SimpleDocument doc : docs){
-			doc.setReferences(references.get(doc.getDocId()));
+		else{
+			result.put("documents", new ArrayList<Document>(0));
+			result.put("nclusters", 0);
 		}
-
-		DoubleMatrix2D matrix = dbService.buildFrequencyMatrix(docIds);
-
-		//Clustering
-		KMeans kmeans = new KMeans();
-		kmeans.cluster(matrix, clusters );
-		DoubleMatrix2D partition = kmeans.getPartition();
-
-		for(i = 0; i < partition.rows(); i++){
-			for(int j = 0; j < partition.columns(); j++)
-				if ( partition.getQuick(i, j) != 0){
-					docs.get(i).setCluster(j);
-				}
-		}
-
-		Map<String, Object> result = new HashMap<>();
-		result.put("documents", docs);
-		result.put("nclusters", partition.columns());
 
 		ObjectMapper mapper = new ObjectMapper();
 		return mapper.writeValueAsString(result);
@@ -94,6 +130,9 @@ public class LocalDocumentSearcher implements DocumentSearcher {
 
 	private String buildQuery(QueryData queryData) {
 		String terms = queryData.getTerms();
+		if ( terms.trim().isEmpty() )
+			return null;
+
 		String op;
 		switch (queryData.getOperator()) {
 		case "or":		
@@ -106,7 +145,7 @@ public class LocalDocumentSearcher implements DocumentSearcher {
 			op = "|";
 			break;
 		}
-		
+
 		StringBuilder query = new StringBuilder();
 		// Checa consulta usando padrão para expressões entre aspas:
 		// busca por frases

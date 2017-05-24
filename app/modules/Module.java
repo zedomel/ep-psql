@@ -5,7 +5,7 @@ import com.google.inject.name.Names;
 
 import play.Configuration;
 import play.Environment;
-import services.DocumentParser;
+import services.database.DatabaseService;
 import services.search.DocumentSearcher;
 
 public class Module extends AbstractModule {
@@ -36,19 +36,9 @@ public class Module extends AbstractModule {
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
-
-		bindingClassName = configuration.getString("documentParser");
-		try {
-			Class<? extends DocumentParser> bindingClass =
-					environment.classLoader().loadClass(bindingClassName)
-					.asSubclass(DocumentParser.class);
-
-			bind(DocumentParser.class)
-			.annotatedWith(Names.named("docParser"))
-			.to(bindingClass);
-
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		
+		String minPercTerms = configuration.getString("minPercentOfTerms");
+		if ( minPercTerms != null )
+			DatabaseService.minimumPercentOfTerms = Float.parseFloat(minPercTerms);
 	}
 }

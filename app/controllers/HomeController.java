@@ -3,6 +3,7 @@ package controllers;
 import javax.inject.Inject;
 import javax.inject.Named;
 
+import play.Logger;
 import play.data.Form;
 import play.data.FormFactory;
 import play.mvc.Controller;
@@ -23,6 +24,9 @@ public class HomeController extends Controller {
 	 */
 	private final DocumentSearcher docSearcher;
 	
+	/**
+	 * Form factory
+	 */
 	private final FormFactory formFactory;
 	
 	@Inject
@@ -58,23 +62,11 @@ public class HomeController extends Controller {
 		try {
 			jsonResult = docSearcher.search(queryData.get(), false, -1);
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			Logger.error("Can't search for documents. Query: " + queryData.toString(), e);
 			return internalServerError("Can't search for documents");
 		}
     	return ok(jsonResult).as("application/json");
     }
-    
-    
-//    public Result addDocument(String directory){
-//    	try {
-//			indexer.addDocuments(directory);
-//		} catch (IOException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
-//    	return ok(index.render());
-//    }
 
     /**
      * Create javascript routes for this controller

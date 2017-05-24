@@ -9,7 +9,7 @@
     <head>
         @* Here's where we render the page title `String`. *@
         <title>Welcome</title>
-        <link rel="stylesheet" media="screen" href="@routes.Assets.versioned("stylesheets/main.css")">
+        <link rel="stylesheet" media="screen" href="@routes.Assets.versioned("stylesheets/main.min.css")">
         <link rel="stylesheet" media="screen" href="@routes.Assets.versioned("stylesheets/bootstrap.min.css")">
         
         <link rel="shortcut icon" type="image/png" href="@routes.Assets.versioned("images/favicon.png")">
@@ -66,11 +66,33 @@
     		</form>
     	</div>
     	<div class="viz-options">
-    		<button id="reset-btn" class="btn btn-danger">Reset</button>
+    		<button id="reset-btn" class="btn btn-danger glyphicon glyphicon-erase"></button>
+    		<button id="step-btn" class="btn btn-success glyphicon glyphicon-play"></button>
+    		<button id="reheat-btn" class="btn btn-warning glyphicon glyphicon-fire"></button>
     	</div>
     </div>
-       	<svg id="visualization" class="visualization">
-       	
+    <div class="visualization-wrapper">
+		<svg id="visualization" class="visualization">
        	</svg>
+	</div>
+	<div class="documents-list_wrapper">
+		<div class="documents-table">
+			<table class="table table-hover table-striped">
+			<thead>
+				<tr>
+					<th class="doc-index"></th>
+					<th class="doc-title">Title</th>
+					<th class="doc-authors">Authors</th>
+					<th class="doc-year">Pub. Year</th>
+					<th class="doc-doi">DOI</th>
+					<th class="doc-relevance">Relevance</th>
+					<th class="doc-cluster">Cluster</th>
+				</tr>
+			</thead>
+			<tbody>
+			</tbody>
+			</table>
+		</div>
+	</div>
     </body>
 </html>
