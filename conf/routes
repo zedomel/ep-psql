@@ -6,17 +6,9 @@
 
 GET     	/                           	controllers.HomeController.index()
 
-GET			/admin							controllers.AdminController.index()
-
-POST		/admin							controllers.AdminController.submit()
-
-GET			/admin-update					controllers.AdminController.update()
-
 GET			/search							controllers.HomeController.search()
 
 GET     	/javascriptRoutes      			controllers.HomeController.javascriptRoutes
-
-GET     	/adminjavascriptRoutes			controllers.AdminController.javascriptRoutes
 
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.versioned(path="/public", file: Asset)
