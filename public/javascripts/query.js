@@ -73,6 +73,11 @@ successFn = function(data){
 
 	let n = data.documents.length, // total number of documents
 	m = data.nclusters; // number of distinct clusters
+	
+	// If no documents, return.
+	if ( n == 0 ){
+		return;
+	}
 
 	// Cluster colors
 	var color = d3.scaleSequential(d3.interpolateRainbow)
