@@ -233,6 +233,7 @@ public class DatabaseService {
 		doc.setRelevance(rs.getDouble(8));
 		doc.setScore(rs.getDouble(9));
 		doc.setAuthors(rs.getString(10));
+		
 		return doc;
 	}
 
@@ -260,7 +261,7 @@ public class DatabaseService {
 		int numOfTerms = (int) Math.ceil(numberOfDocuments * minNumberOfTerms);
 		
 		String where = sql.toString();
-		final Map<String, Integer> termsFreq = getTermsFrequency(where,numOfTerms);
+		final Map<String, Integer> termsFreq = getTermsCounts(where,numOfTerms);
 		final Map<String, Integer> termsToColumnMap = new HashMap<>();
 
 		// Mapeamento termo -> coluna na matriz (bag of words)
@@ -278,10 +279,10 @@ public class DatabaseService {
 		return matrix;
 	}
 
-	private TreeMap<String, Integer> getTermsFrequency(String where, int minNumberOfTerms) throws Exception {
+	private TreeMap<String, Integer> getTermsCounts(String where, int minNumberOfTerms) throws Exception {
 		try ( Connection conn = db.getConnection();){
 
-			String sql = "SELECT word,nentry FROM ts_stat('SELECT tsv FROM documents";
+			String sql = "SELECT word,ndoc FROM ts_stat('SELECT tsv FROM documents";
 			if ( where != null && !where.isEmpty() )
 				sql += where;
 			sql += String.format("') WHERE nentry > 1 AND ndoc > %d", minNumberOfTerms);
@@ -291,7 +292,7 @@ public class DatabaseService {
 			TreeMap<String,Integer> termsFreq = new TreeMap<>();
 			while( rs.next() ){
 				String term = rs.getString("word");
-				int freq = rs.getInt("nentry");
+				int freq = rs.getInt("ndoc");
 				termsFreq.put(term, freq);
 			}
 			return termsFreq;
@@ -312,21 +313,33 @@ public class DatabaseService {
 
 			Statement stmt = conn.createStatement();
 			ResultSet rs = stmt.executeQuery(sql);
+			
 			int doc = 0;
+			int n = matrix.rows();
+			ObjectMapper mapper = new ObjectMapper();
+			
 			while( rs.next() ){
 				String terms = rs.getString("freqs");
 				if ( terms != null && !terms.isEmpty() ){
-					ObjectMapper mapper = new ObjectMapper();
+					
 					List<Map<String,Object>> t = mapper.readValue(terms, 
 							new TypeReference<List<Map<String,Object>>>(){});
+					
 					for(Map<String,Object> o : t){
 						String term = (String) o.get("word");
 						if ( termsToColumnMap.containsKey(term)){
-							double freq = ((Integer) o.get("nentry")).doubleValue();
-							if ( normalize )
-								freq /= termsFreq.get(term);
+							double freq = ((Number) o.get("freq")).doubleValue();
+							
+							// 1 + log f(t,d)
+							double tfidf = 1;
+							if ( freq != 0 )
+								tfidf += Math.log(freq);
+							
+							// ( 1 + log f(t,d) ) * ( log N / ndoc(t) )
+							tfidf *= Math.log(n/(1.0 + termsFreq.get(term)));
+							
 							int col = termsToColumnMap.get(term);
-							matrix.setQuick(doc, col, freq);
+							matrix.setQuick(doc, col, tfidf);
 						}
 					}
 				}

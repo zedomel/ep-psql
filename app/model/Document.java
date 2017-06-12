@@ -82,6 +82,8 @@ public class Document implements Serializable{
 	 * Lista com id's dos documentos citados
 	 */
 	private List<Long> references;
+
+	private List<Long> neighbors;
 	
 	/**
 	 * Cria um novo documento em branco.
@@ -309,5 +311,15 @@ public class Document implements Serializable{
 	 */
 	public void setY(double y) {
 		this.y = y;
+	}
+
+	public void addNeighbor(long docId) {
+		if ( neighbors == null)
+			neighbors = new ArrayList<Long>();
+		neighbors.add(docId);
+	}
+	
+	public List<Long> getNeighbors() {
+		return neighbors;
 	}
 }

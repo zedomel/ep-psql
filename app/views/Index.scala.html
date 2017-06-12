@@ -11,12 +11,17 @@
         <title>Welcome</title>
         <link rel="stylesheet" media="screen" href="@routes.Assets.versioned("stylesheets/main.min.css")">
         <link rel="stylesheet" media="screen" href="@routes.Assets.versioned("stylesheets/bootstrap.min.css")">
+        <link rel="stylesheet" media="screen" href="@routes.Assets.versioned("stylesheets/bootstrap-slider.min.css")">
         
         <link rel="shortcut icon" type="image/png" href="@routes.Assets.versioned("images/favicon.png")">
         <script src="@routes.Assets.versioned("javascripts/jquery-3.1.0.js")" type="text/javascript"></script>
         <script src="@routes.Assets.versioned("javascripts/bootstrap.min.js")" type="text/javascript"></script>
+        <script src="@routes.Assets.versioned("javascripts/bootstrap-slider.min.js")" type="text/javascript"></script>
+        
         <script src="@routes.Assets.versioned("javascripts/d3.js")" type="text/javascript"></script>
         <script src="@routes.Assets.versioned("javascripts/d3-scale-chromatic.js")" type="text/javascript"></script>
+        <script src="@routes.Assets.versioned("javascripts/knearest.js")" type="text/javascript"></script>
+        <script src="@routes.Assets.versioned("javascripts/forces.js")" type="text/javascript"></script>
         <script src="@routes.Assets.versioned("javascripts/query.js")" type="text/javascript"></script>
         <script type="text/javascript" src="@routes.HomeController.javascriptRoutes"></script>
     </head>
@@ -39,7 +44,32 @@
 		        			<button id="advanced-search-btn" type="button" class="btn btn-default" aria-label="Left Align">
 		  						<span class="glyphicon glyphicon-chevron-down" aria-hidden="true"></span>
 							</button>
+							<button id="viz-settings-btn" type="button" class="btn btn-default" aria-label="Left Align">
+		  						<span class="glyphicon glyphicon-cog" aria-hidden="true"></span>
+							</button>
 					</div>
+				</div>
+				<div class="viz-settings form-horizontal">
+					<div class="form-group">
+						<label for="collision-force" class="col-sm-3">Collision force:</label>
+						<div class="col-sm-9">
+							<input id="collision-force" data-slider-id='collision-force-slider' type="text" data-slider-min="0" data-slider-max="1" data-slider-step="0.1" data-slider-value="0.5"/>							
+						</div>
+					</div>
+					<div class="form-group">
+						<label for="manybody-force" class="col-sm-3">Attraction force:</label>
+						<div class="col-sm-9">
+							<input id="manybody-force" data-slider-id='manybody-force-slider' type="text" data-slider-min="0" data-slider-max="50" data-slider-step="5" data-slider-value="1"/>							
+						</div>
+					</div>
+					<div class="form-group">
+						<label for="clustering-force" class="col-sm-3">Clustering force:</label>
+						<div class="col-sm-9">
+							<label>
+      							<input type="checkbox" id="clustering-force" value="1"> On/Off
+    						</label>							
+						</div>
+					</div>					
 				</div>
 				<div class="advanced-search form-horizontal">
 					<div class="form-group">

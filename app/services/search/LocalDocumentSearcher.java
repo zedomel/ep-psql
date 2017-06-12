@@ -3,10 +3,12 @@ package services.search;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.IntStream;
 
 import javax.inject.Inject;
 
@@ -18,6 +20,9 @@ import model.Document;
 import play.db.Database;
 import services.clustering.KMeans;
 import services.database.DatabaseService;
+import services.knn.KNearestNeighbors;
+import services.quadtree.Node;
+import services.quadtree.QuadTree;
 import views.formdata.QueryData;
 
 public class LocalDocumentSearcher implements DocumentSearcher {
@@ -64,35 +69,21 @@ public class LocalDocumentSearcher implements DocumentSearcher {
 		
 		if( docs.size() > 0){
 
-			long docIds[] = new long[docs.size()];
-			int i = 0;
-			double maxX = docs.get(0).getX(), minX = docs.get(0).getX(), 
-					maxY = docs.get(0).getY() , minY = docs.get(0).getY();
-
-			for( Document doc :  docs){
-				docIds[i] = doc.getDocId();
-
-				//Update X max/min coordinates
-				if ( doc.getX() > maxX )
-					maxX = doc.getX();
-				if ( doc.getX() < minX )
-					minX = doc.getX();
-
-				//Update Y max/min coordinates
-				if ( doc.getY() > maxY )
-					maxY = doc.getY();
-				if ( doc.getY() < minY )
-					minY = doc.getY();
-
-				++i;
-			}
+			// Coleta doc_ids
+			long docIds[] = docs.parallelStream().mapToLong((doc) -> doc.getDocId()).toArray();
 			
+			// Quadtree para K-NN
+			QuadTree<Document> quadTree = new QuadTree<>(-1, -1, 1, 1);
+			for( Document doc : docs)
+				quadTree.add(doc.getX(), doc.getY(), doc);
+			
+			//K-NN
+			findNearestNeighbors(quadTree, docs, (int) (docs.size() * 0.02));
+					
 			// References
 			Map<Long, List<Long>> references = dbService.getReferences(docIds);
-			for(Document doc : docs){
-				doc.setReferences(references.get(doc.getDocId()));
-			}
 			
+			// Controi matriz de frequencia de termos
 			DoubleMatrix2D matrix = dbService.buildFrequencyMatrix(docIds);
 			
 			assert docs.size() == matrix.rows();
@@ -104,16 +95,13 @@ public class LocalDocumentSearcher implements DocumentSearcher {
 			kmeans.cluster(matrix, numClusters);
 			DoubleMatrix1D clusters = kmeans.getClusterAssignments();
 
-			//Normalize <x,y> coordinates to [-1,1]
-			i = 0;
-			for( Document doc : docs){
-				doc.setX( 2 * (doc.getX() - minX)/(maxX-minX) - 1 );
-				doc.setY( 2 * (doc.getY() - minY)/(maxY-minY) - 1 );
-				doc.setCluster((int)clusters.get(i));
-				++i;
-			}
+			//Atribui id cluster e referencias
+			IntStream.range(0, docs.size()).parallel().forEach( (i) -> {
+				docs.get(i).setReferences(references.get(docs.get(i).getDocId()));
+				docs.get(i).setCluster((int)clusters.get(i));
+			});
 
-			// Sort by relevance (descending)
+			// Ordena por relevancia (descrescente)
 			docs.sort(Comparator.comparing((Document d) -> d.getRelevance()).reversed());
 
 			result.put("documents", docs);
@@ -126,6 +114,24 @@ public class LocalDocumentSearcher implements DocumentSearcher {
 
 		ObjectMapper mapper = new ObjectMapper();
 		return mapper.writeValueAsString(result);
+	}
+
+	private void findNearestNeighbors(QuadTree<Document> quadTree, List<Document> docs, int k) {
+		
+		KNearestNeighbors<Document> knn = new KNearestNeighbors<>();
+		quadTree.traverse(quadTree.getRootNode(), (tree, node) -> {
+			LinkedList<Node<Document>> bestQueue = new LinkedList<>(), 
+					resultQueue = new LinkedList<>();
+			bestQueue.add(quadTree.getRootNode());
+			knn.kNearest(bestQueue, resultQueue, node.getX(), node.getY(), k+1);
+			
+			for(Node<Document> n : resultQueue){
+				if ( n.getMinDist() > 0){
+					node.getPoint().getValue().addNeighbor(n.getPoint().getValue().getDocId());
+				}
+			}
+		});
+		
 	}
 
 	private String buildQuery(QueryData queryData) {
