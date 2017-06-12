@@ -90,7 +90,7 @@
 	width: 15%;
 }
 
-div.tooltip {
+div.node-tooltip {
 	position: absolute;
 	text-align: center;
 	width: 350px;
@@ -103,7 +103,7 @@ div.tooltip {
 	/* pointer-events: none; */
 }
 
-div.tooltip p {
+div.node-tooltip p {
 	text-transform: capitalize;
 }
 
@@ -128,11 +128,17 @@ circle {
 	width: 100%;
 }
 
-.advanced-search {
+.advanced-search,
+.viz-settings {
 	padding-top: 15px;
 }
 
-#searchForm .advanced-search .form-group .auto-width {
+.slider-selection {
+	background: #BABABA;
+}
+
+#searchForm .advanced-search .form-group .auto-width,
+#searchForm .viz-settings .form-group .auto-width{
 	width: auto;
 }
 
@@ -140,7 +146,8 @@ circle {
 	text-align: right;
 }
 
-.advanced-search .form-group span {
+.advanced-search .form-group span,
+.viz-settings .form-group span {
 	text-align: center;
 }
 

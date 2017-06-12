@@ -94,3 +94,53 @@ function forceCollide() {
 
 	return force;
 }
+
+//Cluster force
+function forceCluster(alpha) {
+	for (var i = 0, n = nodes.length, node, cluster, k = alpha * 1.2; i < n; ++i) {
+		node = nodes[i];
+		cluster = clusters[node.cluster];
+		node.vx -= (node.x - cluster.x) * k;
+		node.vy -= (node.y - cluster.y) * k;
+	}
+}
+
+function forceCluster(){
+
+	var nodes;
+	var quadtree;
+
+	function force(alpha) {
+		clusters.forEach(function(d) {
+			var r = d.r + maxRadius + Math.max(padding, clusterPadding),
+			nx1 = d.x - r,
+			nx2 = d.x + r,
+			ny1 = d.y - r,
+			ny2 = d.y + r;
+			quadtree.visit(function(quad, x1, y1, x2, y2) {
+				if ( quad.data && (quad.data !== d)){
+					cluster = clusters[quad.data.cluster];
+					if ( quad.data != cluster ){
+						quad.data.vx -= (quad.data.x - cluster.x) * alpha;
+						quad.data.vy -= (quad.data.y - cluster.y) * alpha;
+					}
+				}
+				return x1 > nx2 || x2 < nx1 || y1 > ny2 || y2 < ny1;
+			});
+		});
+	}
+
+	force.initialize = function(_) {
+		var width = $("svg").width(),
+		height = $("svg").height();
+		
+		nodes = _;
+		quadtree = d3.quadtree()
+		.extent([[-1,-1], [width+1,height+1]])
+		.x((d) => d.x)
+		.y((d) => d.y)
+		.addAll(nodes);
+	}
+
+	return force;
+}
