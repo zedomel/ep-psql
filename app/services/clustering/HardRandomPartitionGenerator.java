@@ -20,10 +20,11 @@
  */
 package services.clustering;
 
-import cern.colt.matrix.DoubleMatrix2D;
 import org.apache.commons.math3.distribution.UniformIntegerDistribution;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
+
+import cern.colt.matrix.tdouble.DoubleMatrix2D;
 
 public class HardRandomPartitionGenerator implements PartitionGenerator {
 

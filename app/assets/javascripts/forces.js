@@ -1,6 +1,8 @@
 //Initialize visualization
 successFn = function(data){
 
+	$('#loading').addClass('hidden');
+	
 	//Enable step button
 	$("#step-btn").prop('disabled', false);
 	$("#step-btn").off();
@@ -12,34 +14,32 @@ successFn = function(data){
 	//Disable click event onto table rows
 	$(".documents-table table tbody tr").off();
 
-	let step = 0;
+	var step = 0;
 
-	let margin = {top: 100, right: 100, bottom: 100, left: 100};
-	let svg = d3.select("svg"),
-	width = $("svg").width();
-	height = $("svg").height(),
+	var margin = {top: 100, right: 100, bottom: 100, left: 100};
+	var svg = d3.select("svg"),
+	width = $("svg").width(),
+	height = $("svg").height();
+	
 	svg.attr('width', width);
 	svg.attr('height', height);
-
-	//Zoom
-	transform = d3.zoomIdentity;
 
 	//Clear previous visualization
 	svg.selectAll('g').remove();
 	svg.selectAll('defs').remove();
 	$(".documents-table table tbody tr").remove();
 
-	let padding = 3, // separation between same-color nodes
+	var padding = 3, // separation between same-color nodes
 	clusterPadding = 6, // separation between different-color nodes
-	pointPadding = 1;
+	pointPadding = 1,
 	maxRadius = width * 0.05,
 	minRadius = width * 0.005;
 
-	let n = data.documents.length, // total number of documents
+	var n = data.documents.length, // total number of documents
 	m = data.nclusters; // number of distinct clusters
 
 	// If no documents, return.
-	if ( n == 0 ){
+	if ( n === 0 ){
 		return;
 	}
 
@@ -73,7 +73,7 @@ successFn = function(data){
 	var nodes = createNodes(data.documents);
 
 	// Tooltip on mouse over
-	let tip = d3.select("body").append("div")
+	var tip = d3.select("body").append("div")
 	.attr("class", "node-tooltip")
 	.style("opacity", 0);
 
@@ -94,41 +94,34 @@ successFn = function(data){
 
 	var quadtree = d3.quadtree()
 	.extent([[-1,-1], [width+1,height+1]])
-	.x((d) => d.x)
-	.y((d) => d.y)
+	.x(function(d) { return  d.x;})
+	.y(function(d) { return  d.y;})
 	.addAll(nodes);
 
 	// Create points
 	var g = svg.append("g");
-	let points = g
+	var points = g
 	.datum(nodes)
 	.selectAll('.circle')
-	.data(d => d)
+	.data(function(d) { return d;})
 	.enter().append('circle')
-	.attr('r', (d) => minRadius)
-	.attr('cx', (d) => d.x)
-	.attr('cy', (d) => d.y)
-	.attr('fill', (d) => color(d.cluster))
+	.attr('r', function(d) { return minRadius; })
+	.attr('cx', function(d) { return d.x;})
+	.attr('cy', function(d) { return  d.y;})
+	.attr('fill', function(d) { return  color(d.cluster);})
 	.attr('stroke', 'black')
 	.attr('stroke-width', 1);
 
-	let circles = points
-	.filter((d,i) => d.relevance >= maxRevToShow);
+	var circles = points
+	.filter(function(d,i) { return d.data.relevance >= maxRevToShow;});
 
-	let path = g
+	var path = g
 	.selectAll("path")
 	.data(links)
 	.enter().append("path")
 	.attr("class", "link")
 	.attr('stroke-width', 1.5)
 	.attr("marker-end", function(d) { return "url(#link)"; });
-
-	//Zoom
-	svg.call(d3.zoom() 
-			.extent([[0,0], [width,height]])
-//			.translateExtent([[0,0],[width,height]])
-			.scaleExtent([ 1 / 2, 8])
-			.on("zoom", zoomed));
 
 	++step;
 
@@ -137,28 +130,28 @@ successFn = function(data){
 	// Second step: set circle's radius
 	function secondStep(){
 		circles
-		.attr('r', (d) => d.r)
-		.attr('fill', (d) => color(d.cluster))
-		.attr('fill-opacity', (d) => 0.3);
+		.attr('r', function(d){ return  d.r; })
+		.attr('fill', function(d) { return color(d.cluster);})
+		.attr('fill-opacity', function(d) { return 0.3; });
 	}
 
 	//Third step: initialize force scheme
 	function thirdStep(){
 
-		let collideStrength = parseFloat( $("#collision-force").val() ),
+		var collideStrength = parseFloat( $("#collision-force").val() ),
 		manyBodyStrength = parseFloat($("#manybody-force").val());
 
-		let clusteringForceOn = $("#clustering-force").prop('checked');
+		var clusteringForceOn = $("#clustering-force").prop('checked');
 
 		//Collision force
-		let forceCollide = d3.forceCollide()
-		.radius((d) => d.r > minRadius ? d.r + padding : d.r + pointPadding)
+		var forceCollide = d3.forceCollide()
+		.radius(function(d) { return d.r > minRadius ? d.r + padding : d.r + pointPadding; })
 		.strength(collideStrength)
 		.iterations(1);
 
 		//Link force (citations)
 		var forceLink = d3.forceLink()
-		.id((d) => d.docId)
+		.id(function(d) { return d.docId; })
 		.links(links)
 		.strength(0)
 		.distance(0);
@@ -191,7 +184,7 @@ successFn = function(data){
 	// Simulation has finished
 	function endSimulation(){
 		circles
-		.attr("fill-opacity", (d) => 1)
+		.attr("fill-opacity", 1)
 		.on("mouseover", showTip)
 		.on("mouseout", hideTip)
 		.on("click", toggleLinks);
@@ -214,7 +207,7 @@ successFn = function(data){
 	// Create nodes
 	function createNodes(documents){
 		return $.map(documents, function(doc, index){
-			if (doc.x != undefined && doc.y != undefined ){
+			if (doc.x !== undefined && doc.y !== undefined ){
 				var radius = radiusInterpolator(doc.relevance);
 
 				sumArea += 4 * (radius + padding)  * (radius + padding);
@@ -228,13 +221,7 @@ successFn = function(data){
 						r: sumArea <= maxArea ? radius : minRadius,
 								x: x(doc.x),
 								y: y(doc.y),
-								title: doc.title,
-								authors: doc.authors,
-								doi: doc.doi,
-								year: doc.publicationDate,
-								keywords: doc.keywords,
-								relevance: doc.relevance,
-								nb: doc.neighbors
+								data: doc
 				};
 
 				//Set links
@@ -263,12 +250,16 @@ successFn = function(data){
 	function addDocumentToTable(index, doc){
 		var row = '<tr><td class="doc-index">' + index + '</td><td class="doc-title">' + doc.title +
 		'</td><td class="doc-authors">';
-		if ( doc.authors )
-			row += doc.authors;
+		if ( doc.authors && doc.authors.length > 0){
+			row += doc.authors[0].name;
+			for(var i = 1; i < doc.authors.length; i++){
+				row += "; " + doc.authors[i].name;
+			}
+		}
 		row += '</td><td class="doc-year">';
 		if ( doc.publicationDate )
 			row += doc.publicationDate;
-		row += '</td><td class="doc-doi">'
+		row += '</td><td class="doc-doi">';
 			if ( doc.doi )
 				row += '<a href="https://dx.doi.org/' + d.doi + '" target="_blank">' + 
 				doc.doi + '</a>';
@@ -279,47 +270,47 @@ successFn = function(data){
 		$('.documents-table .table tbody').append(row);
 	}
 
-	// Handle zoom
-	function zoomed(){
-		g.attr("transform", d3.event.transform)
-		.selectAll("path")
-		.attr('stroke-width', 1.5 *  1 / d3.event.transform.k);
-		g.selectAll("circle")
-		.style("stroke-width", 4 * 1 / d3.event.transform.k);
-	}
-
 	// Execute at each simulation iteration
 	function ticked(){
 
-		const width = $("svg").width();
-		const height = $("svg").height();
+		var width = $("svg").width();
+		var height = $("svg").height();
 
 		points
-		.attr("cx", (d) => d.x = Math.max(d.r, Math.min(width - d.r, d.x)))
-		.attr("cy", (d) => d.y = Math.max(d.r, Math.min(height - d.r, d.y)));
+		.attr("cx", function(d) { return (d.x = Math.max(d.r, Math.min(width - d.r, d.x)));})
+		.attr("cy", function(d) { return (d.y = Math.max(d.r, Math.min(height - d.r, d.y)));});
 
 		path
 		.attr("d", linkArc);
 	}
 
 	// Show tips when mouse over
-	function showTip(d){
+	function showTip(n){
+		tip.transition()
+		.duration(500)
+		.style("opacity", 0);
+		
 		tip.transition()
 		.duration(200)
 		.style("opacity", 0.9)
 		.style("display", "block");
 
+		var d = n.data;
 		var tipHtml = '<a href="https://dx.doi.org/' + d.doi + '" target="_blank"><p>';
 		if (d.title)
 			tipHtml += "<strong>" + d.title + "</strong>";
-		if ( d.authors )
-			tipHtml += ", " + d.authors;
-		if ( d.year )
-			tipHtml +=  ", " + d.year;
+		if ( d.authors && d.authors.length > 0){
+			tipHtml +=", " + d.authors[0].name;
+			for(var i = 1; i < d.authors.length; i++){
+				tipHtml += "; " + d.authors[i].name;
+			}
+		}
+		if ( d.publicationDate )
+			tipHtml +=  ", " + d.publicationDate;
 		tipHtml += "</p></a>";
 		tip.html(tipHtml)
-		.style("left", (d3.event.pageX + d.r + 2) + "px")
-		.style("top", (d3.event.pageY + d.r + 2) + "px");
+		.style("left", (n.x + n.r/2) + "px")
+		.style("top", (n.y + n.r/2) + "px");
 		d3.select(this).style("stroke-opacity", 1);
 	}
 
@@ -365,7 +356,7 @@ successFn = function(data){
 
 	// Show arc (links)
 	function linkArc(l) {
-		let dx = l.target.x - l.source.x,
+		var dx = l.target.x - l.source.x,
 		dy = l.target.y - l.source.y,
 		dr = Math.sqrt(dx * dx + dy * dy);
 		return "M" + l.source.x + "," + l.source.y + "A" + dr + "," + dr + " 0 0,1 " + l.target.x + "," + l.target.y;
@@ -419,8 +410,7 @@ successFn = function(data){
 			height = $("svg").height();
 
 			nodes = _;
-
-		}
+		};
 
 		return force;
 	}
@@ -433,11 +423,11 @@ successFn = function(data){
 			nodes.forEach(function(d){
 				var strength_x = 0, strength_y = 0;
 				var mi = Math.PI * d.r * d.r;
-				var neighbors = d.nb;
+				var neighbors = d.data.nb;
 				neighbors.forEach(function(val, idx){
 					var mj = Math.PI * val.r * val.r,
 						dx = d.x - val.x,
-						dy = d.y - val.y
+						dy = d.y - val.y,
 						dist = Math.sqrt(dx*dx + dy*dy),
 						dij = Math.max(0, dist - (d.r + val.r));
 						
@@ -455,16 +445,16 @@ successFn = function(data){
 		force.initialize = function(_) {
 			nodes = _;
 			nodes.forEach(function(n){
-				var neighbors = new Array();
-				if (n.nb){
-					n.nb.forEach(function(nb){
+				var neighbors = [];
+				if (n.data.nb){
+					n.data.nb.forEach(function(nb){
 						var i = findNodeByDocId(nodes, nb);
 						neighbors.push(i);
 					});
 				}
-				n.nb = neighbors;
+				n.data.nb = neighbors;
 			});
-		}
+		};
 
 		return force;
 	}
@@ -483,8 +473,6 @@ successFn = function(data){
 
 		function force(alpha) {
 			nodes.forEach(function(node) {
-				Math.max(Math.abs(origin - node[axis]), node.r)
-
 				var delta = strength * 10000 / (origin - node[axis]) * alpha;
 				var repulsion = node.r * strength;
 
@@ -494,8 +482,8 @@ successFn = function(data){
 
 		force.initialize = function(_) {
 			nodes = _;
-		}
+		};
 
 		return force;
 	}
-}
+};

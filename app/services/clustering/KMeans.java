@@ -23,26 +23,26 @@ package services.clustering;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 
-import cern.colt.matrix.DoubleMatrix1D;
-import cern.colt.matrix.DoubleMatrix2D;
-import cern.colt.matrix.doublealgo.Statistic;
-import cern.colt.matrix.doublealgo.Statistic.VectorVectorFunction;
-import cern.colt.matrix.impl.DenseDoubleMatrix1D;
-import cern.colt.matrix.impl.DenseDoubleMatrix2D;
-import cern.colt.matrix.impl.SparseDoubleMatrix2D;
+import cern.colt.matrix.impl.AbstractMatrix;
+import cern.colt.matrix.tdouble.DoubleMatrix1D;
+import cern.colt.matrix.tdouble.DoubleMatrix2D;
+import cern.colt.matrix.tdouble.algo.DoubleStatistic;
+import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix1D;
+import cern.colt.matrix.tdouble.impl.DenseDoubleMatrix2D;
+import cern.colt.matrix.tdouble.impl.SparseDoubleMatrix2D;
+
 
 public class KMeans {
 
-	private DoubleMatrix2D means;
+	private AbstractMatrix means;
 	private DoubleMatrix2D partition;
 	private DoubleMatrix1D clusters;
 	private int maxIterations = 1000;
 	private RandomGenerator randomGenerator = new MersenneTwister();
 	private PartitionGenerator partitionGenerator = new HardRandomPartitionGenerator();
-	private VectorVectorFunction distanceMeasure = Statistic.EUCLID;
-
+	
 	public KMeans() {
-
+		
 	}
 
 	public void cluster(DoubleMatrix2D data, int numClusters) {
@@ -54,20 +54,20 @@ public class KMeans {
 		partitionGenerator.setRandomGenerator(randomGenerator);
 		partitionGenerator.generate(partition);
 
-		means = new DenseDoubleMatrix2D(p, numClusters);
-		
-		boolean changedPartition = true;
+		DoubleMatrix2D means = new DenseDoubleMatrix2D(p, numClusters);
 
+		boolean changedPartition = true;
+		
 		// Begin the main loop of alternating optimization
 		for (int itr = 0; itr < maxIterations && changedPartition; ++itr) {
 			// Get new prototypes (v) for each cluster using weighted median
 			for (int k = 0; k < numClusters; k++) {
 
 				double sumWeight = partition.viewColumn(k).zSum();
-				
+
 				for (int j = 0; j < p; j++) {
 					double sumValue = 0;	
-					
+
 					for (int i = 0; i < n; i++) {
 						double Um = partition.getQuick(i, k);
 						sumValue += data.getQuick(i, j) * Um;
@@ -82,7 +82,7 @@ public class KMeans {
 			for (int k = 0; k < numClusters; k++) {
 				for (int i = 0; i < n; i++) {
 					// Euclidean distance calculation
-					double distance = distanceMeasure.apply(means.viewColumn(k), data.viewRow(i));
+					double distance = DoubleStatistic.EUCLID.apply(means.viewColumn(k), data.viewRow(i));
 					distances.setQuick(i, k, distance);
 				}
 			}
@@ -115,7 +115,73 @@ public class KMeans {
 		}
 	}
 
-	public DoubleMatrix2D getMeans() {
+	public void cluster(DoubleMatrix1D data, int numClusters) {
+		int n = (int) data.size(); // Number of examples
+
+		clusters = new DenseDoubleMatrix1D(n);
+		partition = new SparseDoubleMatrix2D(n, numClusters);
+		partitionGenerator.setRandomGenerator(randomGenerator);
+		partitionGenerator.generate(partition);
+
+		DoubleMatrix1D means = new DenseDoubleMatrix1D(numClusters);
+
+		boolean changedPartition = true;
+
+		// Begin the main loop of alternating optimization
+		for (int itr = 0; itr < maxIterations && changedPartition; ++itr) {
+			// Get new prototypes (v) for each cluster using weighted median
+			for (int k = 0; k < numClusters; k++) {
+
+				double sumWeight = partition.viewColumn(k).zSum();
+				double sumValue = 0;	
+
+				for (int i = 0; i < n; i++) {
+					double Um = partition.getQuick(i, k);
+					sumValue += data.getQuick(i) * Um;
+				}
+
+				means.setQuick(k, sumValue / sumWeight);
+			}
+
+			// Calculate distance measure d:
+			DoubleMatrix2D distances = new DenseDoubleMatrix2D(n, numClusters);
+			for (int k = 0; k < numClusters; k++) {
+				for (int i = 0; i < n; i++) {
+					// Euclidean distance calculation
+					double distance = Math.abs(means.getQuick(k) - data.getQuick(i));
+					distances.setQuick(i, k, distance);
+				}
+			}
+
+			// Get new partition matrix U:
+			changedPartition = false;
+			for (int i = 0; i < n; i++) {
+				double minDistance = Double.MAX_VALUE;
+				int closestCluster = 0;
+
+				for (int k = 0; k < numClusters; k++) {
+					// U = 1 for the closest prototype
+					// U = 0 otherwise
+
+					if (distances.getQuick(i, k) < minDistance) {
+						minDistance = distances.getQuick(i, k);
+						closestCluster = k;
+					}
+				}
+
+				if (partition.getQuick(i, closestCluster) == 0) {
+					changedPartition = true;
+
+					for (int k = 0; k < numClusters; k++) {
+						partition.setQuick(i, k, (k == closestCluster) ? 1 : 0);
+					}
+				}
+				clusters.setQuick(i, closestCluster);
+			}
+		}
+	}
+
+	public AbstractMatrix getMeans() {
 		return means;
 	}
 
@@ -141,13 +207,5 @@ public class KMeans {
 
 	public void setRandomGenerator(RandomGenerator random) {
 		this.randomGenerator = random;
-	}
-
-	public VectorVectorFunction getDistanceMeasure() {
-		return distanceMeasure;
-	}
-
-	public void setDistanceMeasure(VectorVectorFunction distanceMeasure) {
-		this.distanceMeasure = distanceMeasure;
 	}
 }

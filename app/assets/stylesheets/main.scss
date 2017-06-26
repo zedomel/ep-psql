@@ -1,0 +1,208 @@
+.visualization {
+	width: 95vw;
+	height: 80vh;
+}
+
+.visualization-wrapper {
+	/* border: 1px solid black; */
+}
+
+.documents-table {
+	.table {		
+		width: 100%;	
+		
+		svg {
+			width: 2vw;
+			height: 2vw;
+		}
+	
+		tr {
+			td{
+				height: 10vh;
+				line-height: 1.5;
+				min-height: 10vh;
+			}
+		}
+	
+		thead,
+		tbody,
+		tr,
+		td,
+		th {
+			display: block;
+		}
+	
+		tr:after{
+			content: ' ';
+			display: block;
+			visibility: hidden;
+			clear: both;
+		}
+	
+		thead {
+			th {
+				height: 30px;
+				width: 16.6%;
+				float: left;
+				
+				&.doc-index{
+					width: 0%;
+					visibility: hidden;
+					display: none;
+				}
+			
+				&.doc-title{
+					width: 35%;
+				}
+			
+				&.doc-authors{
+					width: 32%;
+				}
+			
+				&.doc-year,
+				&.doc-relevance,
+				&.doc-cluster{
+					width: 6%;
+				}
+			
+				&.doc-doi{
+					width: 15%;
+				}
+			}
+		}
+	
+		tbody{
+			height: 30vh;
+			overflow-y: auto;
+			
+			td{
+				width: 16.6%;
+				float: left;
+				
+				&.doc-index{
+					width: 0%;
+					visibility: hidden;
+					display: none;
+				}
+			
+				&.doc-title{
+					width: 35%;
+				}
+			
+				&.doc-authors{
+					width: 32%;
+				}
+			
+				&.doc-year,
+				&.doc-relevance,
+				&.doc-cluster{
+					width: 6%;
+				}
+			
+				&.doc-cluster{
+					padding: 0;
+				}
+			
+				&.doc-doi{
+					width: 15%;
+				}	
+			}
+		}
+	}
+}
+
+div.node-tooltip {
+	position: absolute;
+	text-align: center;
+	width: 350px;
+	height: auto;
+	padding: 2px;
+	font: 12px sans-serif;
+	background: #1a1a1a;
+	border: 0px;
+	border-radius: 8px;
+	
+	p {
+		text-transform: capitalize;
+	}
+
+	a {
+		color: #ffffff;
+		padding: 1px;
+	}
+}
+
+circle {
+	stroke: #ea1717e6;
+	stroke-width: 4px;
+	stroke-opacity: 0;
+}
+
+.link {
+	fill: none;
+	stroke: #666;
+	/* stroke-width: 1.5px; */
+	visibility: hidden;
+}
+
+.active {
+	visibility: visible !important;
+}
+
+#searchForm {
+	.simple-search {
+		&.form-inline {
+			.form-control {
+				width: 100%;
+			}
+		}
+	
+		.search-buttons{
+			text-align: right;
+		}
+	}
+
+	.advanced-search,
+	.viz-settings {
+		padding-top: 15px;
+		.form-group {
+			.auto-width {
+				width: auto;
+			}
+		
+			span {
+				text-align: center;
+			}
+		}
+	}
+}
+
+.slider-selection {
+	background: #BABABA;
+}
+
+.result {
+	padding: 10px;
+}
+
+.loading{
+	border: 16px solid #f3f3f3; /* Light grey */
+    border-top: 16px solid #3498db; /* Blue */
+    border-radius: 50%;
+    width: 120px;
+    height: 120px;
+    margin-left: auto;
+	margin-right: auto;
+    -webkit-animation: spin 2s linear infinite;
+    animation: spin 2s linear infinite;
+ }
+
+@-webkit-keyframes spin {
+  0% { -webkit-transform: rotate(0deg); }
+  100% { -webkit-transform: rotate(360deg); }
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}

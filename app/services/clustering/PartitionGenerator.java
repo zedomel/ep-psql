@@ -20,8 +20,9 @@
  */
 package services.clustering;
 
-import cern.colt.matrix.DoubleMatrix2D;
 import org.apache.commons.math3.random.RandomGenerator;
+
+import cern.colt.matrix.tdouble.DoubleMatrix2D;
 
 public interface PartitionGenerator {
 

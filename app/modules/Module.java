@@ -3,9 +3,9 @@ package modules;
 import com.google.inject.AbstractModule;
 import com.google.inject.name.Names;
 
+import ep.db.database.DatabaseService;
 import play.Configuration;
 import play.Environment;
-import services.database.DatabaseService;
 import services.search.DocumentSearcher;
 
 public class Module extends AbstractModule {

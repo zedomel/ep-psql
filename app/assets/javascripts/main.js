@@ -59,9 +59,10 @@ $(document).ready(function() {
 
 //Submission error 
 errorFn = function(err){
+	$('#loading').removeClass('hidden');
 	console.debug("Error:");
 	console.debug(err);
-}
+};
 
 //Reset visualization
 function resetVisualization(e){
@@ -88,4 +89,7 @@ function ajaxSubmitForm(){
 		numClusters: numClusters
 	}, 
 	success: successFn, error: errorFn, dataType: "json"});
+	
+	//Waiting...
+	$('#loading').removeClass('hidden');
 }

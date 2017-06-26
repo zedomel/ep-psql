@@ -14,12 +14,13 @@ import javax.inject.Inject;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import cern.colt.matrix.DoubleMatrix1D;
-import cern.colt.matrix.DoubleMatrix2D;
-import model.Document;
+import cern.colt.matrix.tdouble.DoubleMatrix1D;
+import cern.colt.matrix.tdouble.DoubleMatrix2D;
+import ep.db.database.DatabaseService;
+import ep.db.model.Document;
 import play.db.Database;
 import services.clustering.KMeans;
-import services.database.DatabaseService;
+import services.database.PlayDatabaseWrapper;
 import services.knn.KNearestNeighbors;
 import services.quadtree.Node;
 import services.quadtree.QuadTree;
@@ -33,7 +34,7 @@ public class LocalDocumentSearcher implements DocumentSearcher {
 
 	@Inject
 	public LocalDocumentSearcher(Database db) {
-		this.dbService = new DatabaseService(db);
+		this.dbService = new DatabaseService(new PlayDatabaseWrapper(db));
 	}
 
 	@Override
